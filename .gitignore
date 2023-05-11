@@ -1,2 +1,11 @@
 /data
 .DS_Store
+
+# Vim tmp files
+*.sw[po]
+
+# LaTex temporary files
+*.out
+*.aux
+*.log
+*.synctex.gz
