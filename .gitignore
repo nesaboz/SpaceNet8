@@ -1,3 +1,14 @@
 /data
 .DS_Store
 **/__pycache__/
+
+# Vim tmp files
+*.sw[po]
+
+# LaTex temporary files
+*.out
+*.aux
+*.log
+*.synctex.gz
+.texpadtmp
+milestone/PaperForReview.pdf
