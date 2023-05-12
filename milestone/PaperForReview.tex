@@ -77,8 +77,55 @@ First line of institution2 address\\
 \section{Introduction}
 \label{sec:intro}
 
-Please follow the steps outlined below when submitting your manuscript to the IEEE Computer Society Press.
-This style guide now has several important modifications (for example, you are no longer warned against the use of sticky tape to attach your artwork to the paper), so all authors should read this new version.
+We'll be tackling \href{https://spacenet.ai/}{SpaceNet8} challenge. 
+
+
+\section{Dataset}
+
+We use SpaceNet8 dataset described in detail \href{https://openaccess.thecvf.com/content/CVPR2022W/EarthVision/papers/Hansch_SpaceNet_8_-_The_Detection_of_Flooded_Roads_and_Buildings_CVPRW_2022_paper.pdf}{here}. Data has been acquired using Maxar’s Earth observation satellites (data under creative common license). For SpaceNet8 dataset, two distinct areas of interest (AOIs) were selected that were flooded in 2021 (Germany and Luisiana). Data consists of pansharpened RGB (0.3-0.8m resolution) that are routinely published through Maxar Open Data Program.
+
+Data was pre-labeled by analysts for both the pre- and post-event images. A road segment is considered flooded if it is visibly covered with water or rubble in the post-event imagery. If a building is assigned the flooded attribute, it means that there is flood water in its immediate proximity which is a proxy for probable flooding (since it is not possible from satellite imagery to determine whether a building is actually flooded inside). In the event that cloud cover obscured features in the post-event image, as is often the case in flooding disasters, analysts labeled only visible areas and not make any assumptions where features could not be seen (Figure \ref{fig:dataset1}).
+
+Pre- and post-event images are not co-localized, i.e. do not overlap perfectly, and in fact might have different resolutions. The post-event
+patches cover the same area on the ground but have different pixel sizes. Masks are build from GeoJSON data, where, for example, only vertices of the building polygon mask are stored, vs full mask image (more details \href{https://medium.com/the-downlinq/getting-started-with-spacenet-data-827fd2ec9f53}{here}).
+
+\begin{figure}[t]
+  \centering
+   \includegraphics[width=0.8\linewidth]{figures/dataset1.jpg}
+   \caption{Ground truth label (left), pre-event image (middle) and post-event image (right) of a flooded area. Flood labels
+are created as four channel masks. Channel 1 corresponds
+to non-flooded buildings, channel 2 for flooded buildings,
+channel 3 for non-flooded roads, and channel 4 for flooded
+roads. For example blue and yellow colors in the figure refer to flooded building and road.}
+   \label{fig:dataset1}
+\end{figure}
+
+\section{Baseline}
+
+
+The proposed baseline (SpaceNet8 paper) consists of two independently trained convolutional neural networks: Foundation network (responsible for
+segmenting buildings and roads from the pre-event imagery
+without any flood attribution), and Flood network (responsible for predicting the flood status of roads and buildings by using both
+pre- and post-event imagery as input). In addition to road detection, foundation network includes read speed segmentation (i.e. 8 classes in increments of 10 mph). We will be focus on flooding aspect only for this project. Figure \ref{fig:baseline} gives an overview of main components of the baseline method.
+
+\begin{figure}[t]
+  \centering
+   \includegraphics[width=0.8\linewidth]{figures/baseline.jpg}
+   \caption{Schematic of the baseline method. The foundation network is a U-Net style segmentation network with a ResNet34 encoder. The
+flood attribution network consists of the same U-Net style segmentation network and ResNet34 encoder, but as siamese networks whereby
+a pre-event and post-event image are fed through the network with output features concatenated before the final convolutional layers.}
+   \label{fig:baseline}
+\end{figure}
+
+\subsection{Foundation network}
+For foundation network, baseline model uses U-Net (\cite{UnetPaper}) style segmentation model
+with ResNet34 encoder (\cite{ResnetPaper}) with binary cross entropy loss for building segmentation and custom loss for road segmentation  
+loss between The loss is We train the foundation network following a similar strategy outlined in [26] in terms of loss function and weights for each term. Our objective function consists of
+ losses equally with αb = 0.5. Within the road loss, we set αmc = 0.75. The custom loss function is as follows:
+
+\subsection{Flood network}
+We use a Siamese convolutional neural network [11] togenerate flood predictions. Several existing works showthat a Siamese convolutional neural network is a suitablemethod for detecting change in high resolution satelliteimagery [4, 30]. This network consists of two identicalbranches with shared weights and enables feature extractionfrom pre- and post-event image pairs. We use the sametype of architecture that we use for the foundation featuresnetwork. As a Siamese network, one branch receives thepre-event image as input, while the other branch receivesthe post-event image as input. Each branch’s output featuresare concatenated, followed by two more convolutional layerswith the last layer producing the flood prediction mask.
+
 
 %-------------------------------------------------------------------------
 \subsection{Language}
