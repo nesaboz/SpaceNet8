@@ -9,3 +9,5 @@
 *.aux
 *.log
 *.synctex.gz
+.texpadtmp
+milestone/PaperForReview.pdf
