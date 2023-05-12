@@ -144,6 +144,9 @@ First we need to create intermediary data (this will create data/Germany_Trainin
 ```
 python baseline/data_prep/geojson_prep.py --root_dir /tmp/share/data --aoi_dirs Germany_Training_Public Louisiana-East_Training_Public
 ```
+
+python baseline/data_prep/geojson_prep.py --root_dir /tmp/share/data/spacenet8 --aoi_dirs Louisiana-West_Test_Public
+
 Next create masks (this might 5 min):
 ```
 python baseline/data_prep/create_masks.py --root_dir /tmp/share/data --aoi_dirs Germany_Training_Public Louisiana-East_Training_Public
@@ -151,26 +154,65 @@ python baseline/data_prep/create_masks.py --root_dir /tmp/share/data --aoi_dirs 
 Let's create a split:
 
 ```
-python baseline/data_prep/generate_train_val_test_csvs.py --root_dir /tmp/share/data --aoi_dirs Germany_Training_Public Louisiana-East_Training_Public --out_csv_basename sn8_data --val_percent 0.15 --out_dir /tmp/share/runs
+python baseline/data_prep/generate_train_val_test_csvs.py --root_dir /tmp/share/data/spacenet8 --aoi_dirs Germany_Training_Public Louisiana-East_Training_Public --out_csv_basename sn8_data --val_percent 0.15 --out_dir /tmp/share/data/spacenet8
 ```
-## Train/validate Foundation Feature Network
 
+## Foundation Feature Network
 
+### Train
 
 Now we can train the Foundation network:
 ```
-python baseline/train_foundation_features.py --train_csv /tmp/share/runs/sn8_data_train.csv --val_csv /tmp/share/runs/sn8_data_val.csv --save_dir /tmp/share/runs --model_name resnet34 --lr 0.0001 --batch_size 1 --n_epochs 1 --gpu 0
+python baseline/train_foundation_features.py --train_csv /tmp/share/data/spacenet8/sn8_data_train.csv --val_csv /tmp/share/data/spacenet8/sn8_data_val.csv --save_dir /tmp/share/runs/spacenet8/nenad/foundation --model_name resnet34 --lr 0.0001 --batch_size 4 --n_epochs 1 --gpu 0
 ```
-I've been running into memory issues and had to reduce the batch size to 1.
-### Inference with Foundation Features Network
+P6000 can handle batch size of 4.
+
+### Inference
 
 Write prediction tiffs to be used for postprocessing and generating the submission.csv
 ```
-python baseline/foundation_eval.py --model_path /tmp/runs/resnet34_lr1.00e-04_bs1_03-05-2023-22-43/best_model.pth --in_csv /tmp/runs/split/sn8_data_val.csv --save_preds_dir /tmp/runs/foundation --gpu 0 --model_name resnet34
+python baseline/foundation_eval.py --model_path /tmp/runs/spacenet8/nenad/foundation/resnet34_lr1.00e-04_bs1_03-05-2023-22-43/best_model.pth --in_csv /tmp/share/data/spacenet8/sn8_data_val.csv --save_preds_dir /tmp/runs/spacenet8/nenad/foundation/ --gpu 0 --model_name resnet34
 ```
 
 Write prediction .pngs for visual inspection of predictions:
 ```
-python baseline/foundation_eval.py --model_path /tmp/runs/resnet34_lr1.00e-04_bs1_03-05-2023-22-43/best_model.pth --in_csv /tmp/runs/split/sn8_data_val.csv --save_fig_dir /path/to/output/foundation/pngs --gpu 0 --model_name resnet34
+python baseline/foundation_eval.py --model_path /tmp/runs/spacenet8/nenad/foundation/resnet34_lr1.00e-04_bs1_03-05-2023-22-43/best_model.pth --in_csv /tmp/share/data/spacenet8/sn8_data_val.csv --save_fig_dir /tmp/runs/spacenet8/nenad/foundation/resnet34_lr1.00e-04_bs1_03-05-2023-22-43/pngs --gpu 0 --model_name resnet34
 ```
 
+## Flood network
+
+### Train 
+```
+python baseline/train_flood.py --train_csv /tmp/share/data/spacenet8/sn8_data_train.csv --val_csv /tmp/share/data/spacenet8/sn8_data_val.csv --save_dir /tmp/runs/spacenet8/nenad/flood --model_name resnet34_siamese --lr 0.0001 --batch_size 2 --n_epochs 1 --gpu 0
+```
+### Inference
+1. Write prediction tiffs to be used for postprocessing and generating the submission .csv:
+```
+python baseline/flood_eval.py --model_path /tmp/share/runs/spacenet8/nenad/flood/resnet34_siamese_lr1.00e-04_bs2_07-05-2023-06-26/best_model.pth --in_csv /tmp/share/data/spacenet8/sn8_data_val.csv --save_preds_dir /tmp/share/runs/spacenet8/nenad/flood/resnet34_siamese_lr1.00e-04_bs2_07-05-2023-06-26/tiffs --gpu 0 --model_name resnet34_siamese
+```    
+
+2. Write prediction .pngs for visual inspection of predictions:
+```
+python baseline/flood_eval.py --model_path /tmp/share/runs/spacenet8/nenad/flood/resnet34_siamese_lr1.00e-04_bs2_07-05-2023-06-26/best_model.pth --in_csv /tmp/share/data/spacenet8/sn8_data_val.csv --save_fig_dir /tmp/share/runs/spacenet8/nenad/flood/resnet34_siamese_lr1.00e-04_bs2_07-05-2023-06-26/pngs --gpu 0 --model_name resnet34_siamese
+```
+
+## Post-processing
+
+```
+EVAL_CSV="/home/paperspace/share/runs/spacenet8/nenad/sn8_data_val.csv" # the .csv that prediction was run on
+ROAD_PRED_DIR="/home/paperspace/share/runs/spacenet8/nenad/foundation/resnet34_lr1.00e-04_bs4_11-05-2023-08-13/tiffs" # the directory holding foundation road prediction .tifs. they have suffix _roadspeedpred.tif
+FLOOD_PRED_DIR="/home/paperspace/share/runs/spacenet8/nenad/flood/resnet34_siamese_lr1.00e-04_bs2_11-05-2023-10-48/tiffs" # the directory holding flood prediction .tifs. They have suffix _floodpred.tif
+```
+
+### Roads
+
+Edit road_post.sh and run:
+```
+sh road_post.sh 
+```
+
+The following command deviates from command in README.md since several parameters were changed in the scripts (still have to debug):
+
+```
+python baseline/postprocessing/buildings/building_postprocessing.py --foundation_pred_dir /tmp/share/runs/spacenet8/nenad/foundation/resnet34_lr1.00e-04_bs4_11-05-2023-08-13/tiffs --flood_pred_dir /tmp/share/runs/spacenet8/nenad/flood/resnet34_siamese_lr1.00e-04_bs2_11-05-2023-10-48/tiffs --out_submission_csv /tmp/share/runs/spacenet8/nenad --out_shapefile_dir /tmp/share/runs/spacenet8/nenad/pred_shps --square_size 5 --simplify_tolerance 0.75 --min_area 5
+```
