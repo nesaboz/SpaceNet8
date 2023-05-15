@@ -166,14 +166,19 @@ def save_to_shapefile(in_features, outfile):
 def get_flood_attributed_building_mask(barr, farr, perc_positive=0.25):
     """ barr is building array, farr is flood array.
     perc_positive means any blob with number of flood pixels above this percentage, will be classified as fully flooded. otherwise it is not flooded """
+    """
+    barr is a binary image, 1 is building, 0 is not building
+    farr is a 0-4 image: 0 is a background, 1 non-flooded building, 2 is flooded building, 3 is non-flooded road, 4 is flooded road
+    
+    """
     barr = np.where(barr == 255, 1, 0)
     intersect = np.zeros(farr.shape)
-    intersect = np.where((farr>0) & (barr > 0), farr, barr)
+    intersect = np.where((farr>0) & (barr > 0), farr, barr)   # this gets intersection of building and flood pixels, keeps 1-5 values for flood
     out_arr = np.zeros(farr.shape)
 
-    binary_arr = np.where(intersect > 0, 1, 0)
-    labeled_binary = skimage.measure.label(binary_arr)
-    props = skimage.measure.regionprops(labeled_binary)
+    binary_arr = np.where(intersect > 0, 1, 0)           # this gets a binary image of the intersection
+    labeled_binary = skimage.measure.label(binary_arr)   # this labels each group in the image with a unique number, for example, first building is group 1, second, group 2, etc.
+    props = skimage.measure.regionprops(labeled_binary)  # this gets the properties of each labeled group, area, centroid, etc. coords are coordinates of all pixels 
 
     for i in props:
         row_idxs = i["coords"][:,0]
@@ -184,13 +189,13 @@ def get_flood_attributed_building_mask(barr, farr, perc_positive=0.25):
 
         #out_arr[out_rowidxs, out_colidxs] = np.argmax(np.bincount(intersect[row_idxs,col_idxs]))
         
-        summed = np.sum(intersect[row_idxs,col_idxs])
-        binned = np.bincount(intersect[row_idxs,col_idxs])
-        if len(binned) > 2:
+        summed = np.sum(intersect[row_idxs,col_idxs])    # this gets the sum of the building pixels in the intersection (pixel value is 1 for non-flooded buidling, 2 for flooded) 
+        binned = np.bincount(intersect[row_idxs,col_idxs])  # since interection can be 0, 1, or 2 for buildings, this count number of each
+        if len(binned) > 2:  # if one has all 3 (0, 1, 2) then it is a building that is both flooded and non-flooded
             if (binned[2] / np.sum(binned)) > perc_positive: # if flooded building pixels account for more than perc_positive of all pixels.
-                out_arr[out_rowidxs, out_colidxs] = 2
+                out_arr[out_rowidxs, out_colidxs] = 2   # assigns all pixels as flooded
             else:
-                out_arr[out_rowidxs, out_colidxs] = 1
+                out_arr[out_rowidxs, out_colidxs] = 1   # assigns all pixles as non-flooded
         else:
             out_arr[out_rowidxs, out_colidxs] = 1
     return out_arr
@@ -204,6 +209,9 @@ def main_w_flood(root_dir,
                 simplify_tolerance=0.75,
                 perc_positive=0.5):
     """ function that conflates the flood predictions with the buildings in the foundation features predictions. 
+    
+    it will apply morphological opening of the square_size
+    then
     
     Parameters:
     --------------
@@ -235,26 +243,27 @@ def main_w_flood(root_dir,
         ds = gdal.Open(in_file)
         nrows = ds.RasterYSize
         ncols = ds.RasterXSize
-        geotran = ds.GetGeoTransform()
+        geotran = ds.GetGeoTransform()  # important: geotran becomese geotransform of the in_file
         raster_srs = osr.SpatialReference()
         raster_srs.ImportFromWkt(ds.GetProjectionRef())
         in_arr = ds.ReadAsArray()
         ds = None
         #print("morph opening...")
-        building_arr = opening(in_arr, square(square_size))
+        building_arr = opening(in_arr, square(square_size))  # this applys a morphological opening
 
-        flood_ds = gdal.Open(os.path.join(flood_dir, os.path.basename(in_file).replace("buildingpred.tif", "floodpred.tif")))
-        flood_arr = flood_ds.ReadAsArray()
+        flood_ds = gdal.Open(os.path.join(flood_dir, os.path.basename(in_file).replace("buildingpred.tif", "floodpred.tif")))   # open floodpred.tif file
+        flood_arr = flood_ds.ReadAsArray()  # this gets the flood predictions, 0 is a background, 1 non-flooded building, 2 is flooded building, 3 is non-flooded road, 4 is flooded road
 
         #print("flood attribution...")
         out_arr = get_flood_attributed_building_mask(building_arr, flood_arr, perc_positive=perc_positive)
 
+        # write the output array to a raster 
         driver = gdal.GetDriverByName('MEM')
         outopen_ds = driver.Create('', ncols, nrows, 1, gdal.GDT_Byte)
-        outopen_ds.SetGeoTransform(geotran)
+        outopen_ds.SetGeoTransform(geotran)  # here, the same geotran is applied to the output raster
         band = outopen_ds.GetRasterBand(1)
         outopen_ds.SetProjection(raster_srs.ExportToWkt())
-        band.WriteArray(out_arr)
+        band.WriteArray(out_arr)   # and here we write out_arr to the output raster
         band.FlushCache()
         #print("polygonize...")
         out_ds = polygonize_pred_mask(outopen_ds)
@@ -269,15 +278,15 @@ def main_w_flood(root_dir,
             out_shp_filename = os.path.join(out_shapefile_dir, os.path.basename(in_file[:-4])+".shp")
             save_to_shapefile(feats, out_shp_filename)
 
-        ds = gdal.Open(in_file)
-        image_geotran = ds.GetGeoTransform()
+        ds = gdal.Open(in_file)  # opens associated buildingpred.tif image again
+        image_geotran = ds.GetGeoTransform()   # get it's geotransform
         ds = None
         if len(feats) == 0: # no buildings detecting in the tile, write no prediction to submission
             record_list.append([name_root, 'Building', 'Null', 'POLYGON EMPTY', 'POLYGON EMPTY'])
         else:
             for f in feats:
                 wkt_image_coords = geo_coords_to_image_coords(image_geotran, f['geometry'])
-                flood_val = 'True' if f['properties']['mask_val'] == 2 else 'False'
+                flood_val = 'True' if f['properties']['mask_val'] == 2 else 'False'   # 
                 record_list.append([name_root, 'Building', flood_val, wkt_image_coords, f['geometry']])
         count+=1
         print(f"{np.round((count/len(bld_preds))*100, 2)}%  ", end="\r")
