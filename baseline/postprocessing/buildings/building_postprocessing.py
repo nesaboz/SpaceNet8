@@ -235,7 +235,7 @@ def main_w_flood(root_dir,
     cols = ['ImageId','Object','Flooded','Wkt_Pix','Wkt_Geo']
     record_list = []
     count = 0
-    for in_file in bld_preds:
+    for in_file in bld_preds:  # goes over all tif images
         name_root = os.path.basename(in_file).replace("_buildingpred.tif", '')
         #print(in_file)
         

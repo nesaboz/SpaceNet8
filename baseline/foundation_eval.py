@@ -1,6 +1,7 @@
 import os
 import argparse
 import time
+import datetime
 
 from osgeo import gdal
 from osgeo import osr
@@ -9,6 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 import torch
 import torch.nn as nn
+import pandas as pd
 
 import models.pytorch_zoo.unet as unet
 from models.other.unet import UNet
@@ -124,14 +126,8 @@ models = {
     'unet':UNet
 }
 
-if __name__ == "__main__":
-    args = parse_args()
-    model_path = args.model_path
-    in_csv = args.in_csv
-    save_fig_dir = args.save_fig_dir
-    save_preds_dir = args.save_preds_dir
-    gpu = args.gpu
-    model_name = args.model_name
+
+def run_foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu=0):
 
     img_size = (1300,1300)
 
@@ -145,7 +141,7 @@ if __name__ == "__main__":
                         data_to_load=["preimg","building","roadspeed"],
                         img_size=img_size)
 
-    val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=1)
+    val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=1)  # note that the batch size is 1 here, it simplifies evaluation
     model.load_state_dict(torch.load(model_path))
     model.cuda()
 
@@ -167,6 +163,18 @@ if __name__ == "__main__":
 
     model.eval()
     val_loss_val = 0
+
+    if save_preds_dir is not None:
+        run_folder =  os.path.dirname(save_preds_dir)
+    elif save_fig_dir is not None:
+        run_folder =  os.path.dirname(save_fig_dir)
+    else:
+        raise ValueError('No save_preds_dir nor save_fig_dir provided')
+    
+    eval_results_file = os.path.join(run_folder, 'eval_results.csv')
+    print(f"Saving results to {eval_results_file}")
+            
+            
     with torch.no_grad():
         for i, data in enumerate(val_dataloader):
             current_image_filename = val_dataset.get_image_filename(i)
@@ -182,6 +190,8 @@ if __name__ == "__main__":
             building_pred = torch.sigmoid(building_pred)
             
             preimg = preimg.cpu().numpy()[0] # index at 0 so we have (C,H,W)
+            
+            torch.cuda.empty_cache()
             
             gt_building = building.cpu().numpy()[0][0] # index so building gt is (H, W)
             gt_roadspeed = roadspeed.cpu().numpy()[0] # index so we have (C,H,W)
@@ -219,7 +229,7 @@ if __name__ == "__main__":
                             xmin, xres, ymax, yres,
                             raster_srs, building_pred_arr)
             
-            for j in range(len(gts[i])): # iterate through the building and road gt
+            for j in range(len(gts[i])): # iterate through the building and road gt, i.e. for j in [0, 1]
                 prediction = predictions[i,j]
                 gt = gts[i,j]
                 if j == 1: # it's roadspeed, so get binary pred and gt for metrics
@@ -265,6 +275,7 @@ if __name__ == "__main__":
 
     print()
     data = ["building", "road"]
+    datetime_str = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
     for i in range(len(running_tp)):
         print(f"final metrics for: {data[i]}")
         precision = running_tp[i] / (running_tp[i] + running_fp[i] + 0.00001)
@@ -277,3 +288,38 @@ if __name__ == "__main__":
         print("f1: ", f1)
         print("iou: ", iou)
         print()
+
+        write_to_csv_file(datetime_str, model_name, data[i], precision, recall, f1, iou, eval_results_file)
+
+def write_to_csv_file(datetime_str, model_name, building_or_road, precision, recall, f1, iou, csv_file):
+    new_row = pd.DataFrame([{'datetime': datetime_str,
+                             'model_name': model_name,
+                             'type': building_or_road, 
+                             'precision': precision, 
+                             'recall': recall, 
+                             'f1': f1, 
+                             'iou': iou}])
+
+    # Read the existing CSV file (if it exists)
+    try:
+        existing_data = pd.read_csv(csv_file)
+    except FileNotFoundError:
+        existing_data = pd.DataFrame()
+
+    # Append the new row to the existing data
+    updated_data = existing_data.append(new_row, ignore_index=True)
+
+    # Write the updated data to the CSV file
+    updated_data.to_csv(csv_file, index=False)
+
+        
+if __name__ == "__main__":
+    args = parse_args()
+    model_path = args.model_path
+    in_csv = args.in_csv
+    save_fig_dir = args.save_fig_dir
+    save_preds_dir = args.save_preds_dir
+    model_name = args.model_name
+    gpu = args.gpu
+
+    run_foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu)

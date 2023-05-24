@@ -100,14 +100,8 @@ models = {
     'unet_siamese': UNetSiamese
 }
 
-if __name__ == "__main__":
-    args = parse_args()
-    model_path = args.model_path
-    in_csv = args.in_csv
-    model_name = args.model_name
-    save_fig_dir = args.save_fig_dir
-    save_preds_dir = args.save_preds_dir
-    gpu = args.gpu
+
+def run_flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu=0):
 
     num_classes = 5
     img_size = (1300,1300)
@@ -259,3 +253,15 @@ if __name__ == "__main__":
         print("  recall: ", recall)
         print("  f1: ", f1)
         print("  iou: ", iou)
+        
+        
+if __name__ == "__main__":
+    args = parse_args()
+    model_path = args.model_path
+    in_csv = args.in_csv
+    save_fig_dir = args.save_fig_dir
+    save_preds_dir = args.save_preds_dir
+    model_name = args.model_name
+    gpu = args.gpu
+    
+    run_flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu)

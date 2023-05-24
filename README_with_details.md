@@ -216,3 +216,10 @@ The following command deviates from command in README.md since several parameter
 ```
 python baseline/postprocessing/buildings/building_postprocessing.py --foundation_pred_dir /tmp/share/runs/spacenet8/nenad/foundation/resnet34_lr1.00e-04_bs4_11-05-2023-08-13/tiffs --flood_pred_dir /tmp/share/runs/spacenet8/nenad/flood/resnet34_siamese_lr1.00e-04_bs2_11-05-2023-10-48/tiffs --out_submission_csv /tmp/share/runs/spacenet8/nenad --out_shapefile_dir /tmp/share/runs/spacenet8/nenad/pred_shps --square_size 5 --simplify_tolerance 0.75 --min_area 5
 ```
+
+Sidenote, there is likely some memory issue when running eval on GPU+ and in Jupyter notebook, I get this error, and there is no root cause:
+```
+Canceled future for execute_request message before replies were done
+
+The Kernel crashed while executing code in the the current cell or a previous cell. Please review the code in the cell(s) to identify a possible cause of the failure. Click here for more info. View Jupyter log for further details.
+```
