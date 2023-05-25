@@ -1,6 +1,7 @@
 import os
 import time
 import argparse
+import sys
 
 from osgeo import gdal
 from osgeo import osr
@@ -9,6 +10,10 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 import torch
 import torch.nn as nn
+import psutil
+import datetime
+
+from foundation_eval import write_to_csv_file, get_eval_results_path
 
 import models.pytorch_zoo.unet as unet
 from datasets.datasets import SN8Dataset
@@ -42,6 +47,58 @@ def parse_args():
                          default=0)
     args = parser.parse_args()
     return args
+
+
+def print_top_memory_variables(local_vars, var_number_to_print=5):
+    """Prints top variables in terms of memory. 
+    Usage: `print_top_memory_variables(locals().copy())` can't call locals() in the function itself.
+
+    Args:
+        local_vars (dict): pass `locals().copy()` 
+        var_number_to_print(int): 
+    """
+
+    # Get the local variables
+    memory = {}
+
+    # Iterate over the local variables and print their sizes
+    for var_name, var_value in local_vars.items():
+        var_size = sys.getsizeof(var_value)
+        memory[var_name] = var_size
+        
+    memory_sorted = sorted(memory.items(), key=lambda x: x[1], reverse=True)[:var_number_to_print]
+    
+    for (var_name, var_size) in memory_sorted:
+        print(f"Variable: {var_name}, Size: {var_size} bytes")
+        
+        
+
+def print_cpu_memory(verbose=False):
+
+    # Get the current memory usage
+    memory_info = psutil.virtual_memory()
+
+    # Extract the memory information
+    total_memory = memory_info.total
+    available_memory = memory_info.available
+    used_memory = memory_info.used
+    percent_memory = memory_info.percent
+
+    # Convert bytes to megabytes
+    total_memory_mb = total_memory / 1024**2
+    available_memory_mb = available_memory / 1024**2
+    used_memory_mb = used_memory / 1024**2
+
+    if verbose:
+        # Print the memory information
+        print(f"Total CPU memory: {total_memory_mb:.2f} MB")
+        print(f"Available CPU memory: {available_memory_mb:.2f} MB")
+        print(f"Used CPU memory: {used_memory_mb:.2f} MB")
+        print(f"Percentage of used CPU memory: {percent_memory}%")
+    else:
+        print(f"Percentage of used CPU memory: {percent_memory}%")
+        
+        
 
 def make_prediction_png(image, postimage, gt, prediction, save_figure_filename):
     #raw_im = image[:,:,:3]
@@ -109,8 +166,8 @@ def run_flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name,
     os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu)
 
     val_dataset = SN8Dataset(in_csv,
-                            data_to_load=["preimg","postimg","flood"],
-                            img_size=img_size)
+                             data_to_load=["preimg","postimg","flood"],
+                             img_size=img_size)
     val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=1)
 
     if model_name == "unet_siamese":
@@ -123,8 +180,8 @@ def run_flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name,
 
     #criterion = nn.BCEWithLogitsLoss()
 
-    predictions = np.zeros((len(val_dataset),img_size[0],img_size[1]))
-    gts = np.zeros((len(val_dataset),img_size[0],img_size[1]))
+    # predictions = np.zeros((len(val_dataset),img_size[0],img_size[1]))
+    # gts = np.zeros((len(val_dataset),img_size[0],img_size[1]))
 
     # we need running numbers for each class: [no flood bldg, flood bldg, no flood road, flood road]
     classes = ["non-flooded building", "flooded building", "non-flooded road", "flooded road"]
@@ -141,14 +198,21 @@ def run_flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name,
     positives = [[],[],[],[]]
 
     model.eval()
+    
+    eval_results_file = get_eval_results_path(save_fig_dir, save_preds_dir)
+    
     val_loss_val = 0
     with torch.no_grad():
         for i, data in enumerate(val_dataloader):
+            
+            print_top_memory_variables(locals().copy())
             
             current_image_filename = val_dataset.get_image_filename(i)
             print("evaluating: ", i, os.path.basename(current_image_filename))
             preimg, postimg, building, road, roadspeed, flood = data
 
+            print_cpu_memory()
+            
             preimg = preimg.cuda().float() #siamese
             postimg = postimg.cuda().float() #siamese
             
@@ -243,6 +307,9 @@ def run_flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name,
                 make_prediction_png(preimg, postimg, gt_flood, flood_prediction, save_figure_filename)
 
     print()
+    
+    datetime_str = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+    
     for j in range(len(classes)):
         print(f"class: {classes[j]}")
         precision = running_tp[j] / (running_tp[j] + running_fp[j] + 0.00001)
@@ -254,7 +321,9 @@ def run_flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name,
         print("  f1: ", f1)
         print("  iou: ", iou)
         
+        write_to_csv_file(datetime_str, model_name, classes[j], precision, recall, f1, iou, eval_results_file)
         
+
 if __name__ == "__main__":
     args = parse_args()
     model_path = args.model_path

@@ -162,16 +162,7 @@ def run_foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_
     model.eval()
     val_loss_val = 0
 
-    if save_preds_dir is not None:
-        run_folder =  os.path.dirname(save_preds_dir)
-    elif save_fig_dir is not None:
-        run_folder =  os.path.dirname(save_fig_dir)
-    else:
-        raise ValueError('No save_preds_dir nor save_fig_dir provided')
-    
-    eval_results_file = os.path.join(run_folder, 'eval_results.csv')
-    print(f"Saving results to {eval_results_file}")
-            
+    eval_results_file = get_eval_results_path(save_fig_dir, save_preds_dir)
             
     with torch.no_grad():
         for i, data in enumerate(val_dataloader):
@@ -288,10 +279,25 @@ def run_foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_
 
         write_to_csv_file(datetime_str, model_name, data[i], precision, recall, f1, iou, eval_results_file)
 
-def write_to_csv_file(datetime_str, model_name, building_or_road, precision, recall, f1, iou, csv_file):
+
+def get_eval_results_path(save_fig_dir, save_preds_dir):
+    if save_preds_dir is not None:
+        run_folder =  os.path.dirname(save_preds_dir)
+    elif save_fig_dir is not None:
+        run_folder =  os.path.dirname(save_fig_dir)
+    else:
+        raise ValueError('No save_preds_dir nor save_fig_dir provided')
+    
+    eval_results_file = os.path.join(run_folder, 'eval_results.csv')
+    print(f"Saving results to {eval_results_file}")
+    
+    return eval_results_file
+
+
+def write_to_csv_file(datetime_str, model_name, class_name, precision, recall, f1, iou, csv_file):
     new_row = pd.DataFrame([{'datetime': datetime_str,
                              'model_name': model_name,
-                             'type': building_or_road, 
+                             'class': class_name, 
                              'precision': precision, 
                              'recall': recall, 
                              'f1': f1, 
