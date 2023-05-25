@@ -147,8 +147,6 @@ def run_foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_
 
     #criterion = nn.BCEWithLogitsLoss()
 
-    predictions = np.zeros((len(val_dataset),2,8,img_size[0],img_size[1]))
-    gts = np.zeros((len(val_dataset),2,8,img_size[0],img_size[1]))
     running_tp = [0,0] 
     running_fp = [0,0]
     running_fn = [0,0]
@@ -177,6 +175,8 @@ def run_foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_
             
     with torch.no_grad():
         for i, data in enumerate(val_dataloader):
+            predictions = np.zeros((2,8,img_size[0],img_size[1]))
+            gts = np.zeros((2,8,img_size[0],img_size[1]))
             current_image_filename = val_dataset.get_image_filename(i)
             print("evaluating: ", i, os.path.basename(current_image_filename))
             preimg, postimg, building, road, roadspeed, flood = data
@@ -190,9 +190,6 @@ def run_foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_
             building_pred = torch.sigmoid(building_pred)
             
             preimg = preimg.cpu().numpy()[0] # index at 0 so we have (C,H,W)
-            
-            torch.cuda.empty_cache()
-            
             gt_building = building.cpu().numpy()[0][0] # index so building gt is (H, W)
             gt_roadspeed = roadspeed.cpu().numpy()[0] # index so we have (C,H,W)
             
@@ -202,10 +199,10 @@ def run_foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_
             road_prediction = roadspeed_pred.cpu().numpy()[0] # index so we have (C,H,W)
             roadspeed_prediction = np.rint(road_prediction).astype(int)
             
-            gts[i,0,0] = gt_building
-            gts[i,1,:] = gt_roadspeed
-            predictions[i,0,0] = building_prediction
-            predictions[i,1,:] = roadspeed_prediction
+            gts[0,0] = gt_building
+            gts[1,:] = gt_roadspeed
+            predictions[0,0] = building_prediction
+            predictions[1,:] = roadspeed_prediction
 
             ### save prediction
             if save_preds_dir is not None:
@@ -229,9 +226,9 @@ def run_foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_
                             xmin, xres, ymax, yres,
                             raster_srs, building_pred_arr)
             
-            for j in range(len(gts[i])): # iterate through the building and road gt, i.e. for j in [0, 1]
-                prediction = predictions[i,j]
-                gt = gts[i,j]
+            for j in range(len(gts)): # iterate through the building and road gt, i.e. for j in [0, 1]
+                prediction = predictions[j]
+                gt = gts[j]
                 if j == 1: # it's roadspeed, so get binary pred and gt for metrics
                     prediction = prediction[-1]
                     gt = gt[-1]
@@ -271,8 +268,8 @@ def run_foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_
                 #if save_preds_dir is not None: # for some reason, seg fault when doing both of these. maybe file saving or something is interfering. so sleep for a little
                 #    time.sleep(2) 
                 save_figure_filename = os.path.join(save_fig_dir, os.path.basename(current_image_filename)[:-4]+"_pred.png")
-                make_prediction_png_roads_buildings(preimg, gts[i], predictions[i], save_figure_filename)
-
+                make_prediction_png_roads_buildings(preimg, gts, predictions, save_figure_filename)
+    
     print()
     data = ["building", "road"]
     datetime_str = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
