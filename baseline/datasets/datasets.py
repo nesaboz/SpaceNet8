@@ -52,6 +52,9 @@ class SN8Dataset(Dataset):
         return len(self.files)
 
     def __getitem__(self, index):
+        """
+        Loads geotiff images
+        """
         data_dict = self.files[index]
 
         returned_data = []
