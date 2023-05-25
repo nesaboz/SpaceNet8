@@ -68,17 +68,8 @@ models = {
     'unet':UNet
 }
 
-if __name__ == "__main__":
-    args = parse_args()
-    train_csv = args.train_csv
-    val_csv = args.val_csv
-    save_dir = args.save_dir
-    model_name = args.model_name
-    initial_lr = args.lr
-    batch_size = args.batch_size
-    n_epochs = args.n_epochs
-    gpu = args.gpu
-    checkpoint_path = args.checkpoint
+
+def train(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size, n_epochs, gpu, checkpoint_path):
 
     now = datetime.now() 
     date_total = str(now.strftime("%d-%m-%Y-%H-%M"))
@@ -107,7 +98,7 @@ if __name__ == "__main__":
     # init the training log
     with open(training_log_csv, 'w', newline='') as csvfile:
         fieldnames = ['epoch', 'lr', 'train_tot_loss', 'train_bce', 'train_dice', 'train_focal', 'train_road_loss',
-                                     'val_tot_loss', 'val_bce', 'val_dice', 'val_focal', 'val_road_loss']
+            'val_tot_loss', 'val_bce', 'val_dice', 'val_focal', 'val_road_loss']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
 
@@ -248,3 +239,18 @@ if __name__ == "__main__":
             print(f"    loss improved from {np.round(best_loss, 6)} to {np.round(epoch_val_loss, 6)}. saving best model...")
             best_loss = epoch_val_loss
             save_model_checkpoint(model, best_model_path)
+            
+            
+if __name__ == "__main__":
+    args = parse_args()
+    train_csv = args.train_csv
+    val_csv = args.val_csv
+    save_dir = args.save_dir
+    model_name = args.model_name
+    initial_lr = args.lr
+    batch_size = args.batch_size
+    n_epochs = args.n_epochs
+    gpu = args.gpu
+    checkpoint_path = args.checkpoint
+    
+    train(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size, n_epochs, gpu, checkpoint_path)
