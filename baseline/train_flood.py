@@ -14,6 +14,7 @@ import models.pytorch_zoo.unet as unet
 from models.other.unet import UNetSiamese
 from models.other.siamunetdif import SiamUnet_diff
 from models.other.siamnestedunet import SNUNet_ECAM
+from utils.log import debug_msg, log_var_details, dump_command_line_args
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -112,6 +113,7 @@ if __name__ ==  "__main__":
     checkpoint_model_path = os.path.join(save_dir, "model_checkpoint.pth")
     best_model_path = os.path.join(save_dir, "best_model.pth")
     training_log_csv = os.path.join(save_dir, "log.csv")
+    dump_command_line_args(os.path.join(save_dir, 'args.txt'))
 
     # init the training log
     with open(training_log_csv, 'w', newline='') as csvfile:
@@ -185,6 +187,23 @@ if __name__ ==  "__main__":
             #train_soft_dice_loss += dice_soft_l
             loss.backward()
             optimizer.step()
+            if i == 0:
+                debug_msg('Training loop vars')
+                log_var_details('preimg', preimg)
+                log_var_details('postimg', postimg)
+                log_var_details('building', building)
+                log_var_details('road', road)
+                log_var_details('roadspeed', roadspeed)
+                log_var_details('flood', flood)
+                log_var_details('flood_pred', flood_pred)
+                # preimg, Type: <class 'torch.Tensor'>, Shape: torch.Size([2, 3, 1300, 1300])
+                # postimg, Type: <class 'torch.Tensor'>, Shape: torch.Size([2, 3, 1300, 1300])
+                # building, Type: <class 'torch.Tensor'>, Shape: torch.Size([2])
+                # road, Type: <class 'torch.Tensor'>, Shape: torch.Size([2])
+                # roadspeed, Type: <class 'torch.Tensor'>, Shape: torch.Size([2])
+                # flood, Type: <class 'torch.Tensor'>, Shape: torch.Size([2, 1300, 1300])
+                # flood_pred, Type: <class 'torch.Tensor'>, Shape: torch.Size([2, 5, 1300, 1300])
+                # batch size = 2, num classes = 5, H = 1300, W = 1300
 
             print(f"    {str(np.round(i/len(train_dataloader)*100,2))}%: TRAIN LOSS: {(train_loss_val*1.0/(i+1)).item()}", end="\r")
         print()

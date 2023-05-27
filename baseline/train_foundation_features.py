@@ -13,6 +13,7 @@ from datasets.datasets import SN8Dataset
 from core.losses import focal, soft_dice_loss
 import models.pytorch_zoo.unet as unet
 from models.other.unet import UNet
+from utils.log import debug_msg, log_var_details, dump_command_line_args
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -103,9 +104,12 @@ if __name__ == "__main__":
     checkpoint_model_path = os.path.join(save_dir, "model_checkpoint.pth")
     best_model_path = os.path.join(save_dir, "best_model.pth")
     training_log_csv = os.path.join(save_dir, "log.csv")
+    dump_command_line_args(os.path.join(save_dir, 'args.txt'))
 
     # init the training log
     with open(training_log_csv, 'w', newline='') as csvfile:
+        # TODO: buildings: add precision, recall, f1 score
+        # TODO: road speed: confusion matrix
         fieldnames = ['epoch', 'lr', 'train_tot_loss', 'train_bce', 'train_dice', 'train_focal', 'train_road_loss',
                                      'val_tot_loss', 'val_bce', 'val_dice', 'val_focal', 'val_road_loss']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -140,7 +144,7 @@ if __name__ == "__main__":
         model.load_state_dict(model_state_dict)
     else:
         print('No checkpoint provided. Starting new training ...')
-         
+
     for epoch in range(n_epochs):
         print(f"EPOCH {epoch}")
         tic = time.time()
@@ -180,6 +184,27 @@ if __name__ == "__main__":
             train_road_loss += road_loss
             loss.backward()
             optimizer.step()
+
+            if i == 0:
+                debug_msg('Training loop vars')
+                log_var_details('preimg', preimg)
+                log_var_details('postimg', postimg)
+                log_var_details('building', building)
+                log_var_details('road', road)
+                log_var_details('roadspeed', roadspeed)
+                log_var_details('flood', flood)
+                log_var_details('building_pred', building_pred)
+                log_var_details('bce_l', bce_l)
+                log_var_details('y_pred', y_pred)
+                # preimg, Type: <class 'torch.Tensor'>, Shape: torch.Size([4, 3, 1300, 1300])
+                # postimg, Type: <class 'torch.Tensor'>, Shape: torch.Size([4])
+                # building, Type: <class 'torch.Tensor'>, Shape: torch.Size([4, 1, 1300, 1300])
+                # road, Type: <class 'torch.Tensor'>, Shape: torch.Size([4])
+                # roadspeed, Type: <class 'torch.Tensor'>, Shape: torch.Size([4, 8, 1300, 1300])
+                # flood, Type: <class 'torch.Tensor'>, Shape: torch.Size([4])
+                # building_pred, Type: <class 'torch.Tensor'>, Shape: torch.Size([4, 1, 1300, 1300])
+                # bce_l, Type: <class 'torch.Tensor'>, Shape: torch.Size([])
+                # y_pred, Type: <class 'torch.Tensor'>, Shape: torch.Size([4, 8, 1300, 1300])
 
             print(f"    {str(np.round(i/len(train_dataloader)*100,2))}%: TRAIN LOSS: {(train_loss_val*1.0/(i+1)).item()}", end="\r")
         print()
