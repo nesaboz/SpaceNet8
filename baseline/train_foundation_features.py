@@ -2,6 +2,7 @@ import csv
 import os
 import argparse
 from datetime import datetime
+import time
 
 import torch
 import torch.nn as nn
@@ -39,6 +40,9 @@ def parse_args():
     parser.add_argument("--gpu",
                         type=int,
                         default=0)
+    parser.add_argument("--checkpoint",
+                        type=str,
+                        default=None)
     args = parser.parse_args()
     return args
     
@@ -74,6 +78,7 @@ if __name__ == "__main__":
     batch_size = args.batch_size
     n_epochs = args.n_epochs
     gpu = args.gpu
+    checkpoint_path = args.checkpoint
 
     now = datetime.now() 
     date_total = str(now.strftime("%d-%m-%Y-%H-%M"))
@@ -127,8 +132,18 @@ if __name__ == "__main__":
     bceloss = nn.BCEWithLogitsLoss()
 
     best_loss = np.inf
+    
+    if checkpoint_path:
+        # load checkpoint
+        print('Loaded checkpoint.')
+        model_state_dict = torch.load(checkpoint_path)
+        model.load_state_dict(model_state_dict)
+    else:
+        print('No checkpoint provided. Starting new training ...')
+         
     for epoch in range(n_epochs):
         print(f"EPOCH {epoch}")
+        tic = time.time()
 
         ### Training ##
         model.train()
@@ -224,6 +239,9 @@ if __name__ == "__main__":
         write_metrics_epoch(epoch, fieldnames, train_metrics, val_metrics, training_log_csv)
 
         save_model_checkpoint(model, checkpoint_model_path)
+
+        toc = time.time()
+        print(f"Epoch took: {(toc-tic)/60.0:.1f} minutes")
 
         epoch_val_loss = val_metrics["val_tot_loss"]
         if epoch_val_loss < best_loss:

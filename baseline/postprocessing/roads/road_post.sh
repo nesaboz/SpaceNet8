@@ -1,8 +1,8 @@
 #!/bin/bash
 
-EVAL_CSV="" # the .csv that prediction was run on
-ROAD_PRED_DIR="" # the directory holding foundation road prediction .tifs. they have suffix _roadspeedpred.tif
-FLOOD_PRED_DIR="" # the directory holding flood prediction .tifs. They have suffix _floodpred.tif
+EVAL_CSV="/tmp/share/runs/spacenet8/nenad/sn8_data_val.csv" # the .csv that prediction was run on
+ROAD_PRED_DIR="/tmp/share/runs/spacenet8/nenad/foundation/resnet34_lr1.00e-04_bs4_11-05-2023-08-13/tiffs" # the directory holding foundation road prediction .tifs. they have suffix _roadspeedpred.tif
+FLOOD_PRED_DIR="/tmp/share/runs/spacenet8/nenad/flood/resnet34_siamese_lr1.00e-04_bs2_11-05-2023-10-48/tiffs" # the directory holding flood prediction .tifs. They have suffix _floodpred.tif
 
 OUT_SKNW_WKT="${ROAD_PRED_DIR}/sknw_wkt.csv"
 GRAPH_NO_SPEED_DIR="${ROAD_PRED_DIR}/graphs_nospeed"

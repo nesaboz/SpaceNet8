@@ -37,7 +37,8 @@ import logging
 from multiprocessing.pool import Pool
 
 # import cv2
-from utils import make_logger, rdp
+
+from postprocessing.roads.utils import make_logger, rdp
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -952,9 +953,16 @@ def wkt_to_G(params):
             #print(attr_dict['geometry'].wkt)
     
         # get geom wkt (for printing/viewing purposes)
+        counter, coutner_no_geom = 0, 0
         for i,(u,v,attr_dict) in enumerate(G_projected.edges(data=True)):
-            attr_dict['geometry_wkt'] = attr_dict['geometry'].wkt
-
+            if 'geometry' in attr_dict:
+                attr_dict['geometry_wkt'] = attr_dict['geometry'].wkt
+                counter += 1
+            else: # handle the case where there is no 'geometry' as appropriate for your use case
+                print(f"No geometry found for edge {(u, v)}")
+                coutner_no_geom += 1
+        print(counter, coutner_no_geom)
+        
         if verbose:
             print("post projection...")
             node = list(G_projected.nodes())[-1]
@@ -1204,18 +1212,11 @@ def wkt_to_G(params):
     
 #logger1 = None
 
-if __name__ == "__main__":
-    args = parse_args()
 
-    wkt_submission = args.wkt_submission
-    graph_dir = args.graph_dir
-    log_file = args.log_file
-    min_subgraph_length_pix = args.min_subgraph_length_pix
-    min_spur_length_m = args.min_spur_length_m
+def generate_road_network_graph(wkt_submission, graph_dir, log_file, min_subgraph_length_pix=None, min_spur_length_m=None):
 
-
-    #min_subgraph_length_pix = 20
-    #min_spur_length_m = 10
+    min_subgraph_length_pix = min_subgraph_length_pix or 20
+    min_spur_length_m = min_spur_length_m or 10
 
     
     global logger1 
@@ -1306,3 +1307,15 @@ if __name__ == "__main__":
     tf = time.time()
     logger1.info("Time to run wkt_to_G.py: {} seconds".format(tf - t0))
     print("Time to run wkt_to_G.py: {} seconds".format(tf - t0))
+
+
+if __name__ == "__main__":
+    args = parse_args()
+
+    wkt_submission = args.wkt_submission
+    graph_dir = args.graph_dir
+    log_file = args.log_file
+    min_subgraph_length_pix = args.min_subgraph_length_pix
+    min_spur_length_m = args.min_spur_length_m
+    
+    generate_road_network_graph(wkt_submission, graph_dir, log_file, min_subgraph_length_pix, min_spur_length_m)

@@ -608,9 +608,9 @@ def preprocess(img, thresh, img_mult=255, hole_size=300,
         if verbose:
             print("Run preprocess() with skimage")
         #img = (img > (img_mult * thresh)).astype(np.bool)        
-        img = img.astype(np.bool)
-        remove_small_objects(img, hole_size, in_place=True)
-        remove_small_holes(img, hole_size, in_place=True)
+        img = img.astype(bool)
+        remove_small_objects(img, hole_size, out=img)
+        remove_small_holes(img, hole_size, out=img)
         # img = cv2.dilate(img.astype(np.uint8), np.ones((7, 7)))
 
     # cv2 is generally far faster and more memory efficient (though less
