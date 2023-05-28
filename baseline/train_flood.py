@@ -12,6 +12,7 @@ from torchvision import transforms
 from datasets.datasets import SN8Dataset
 import models.pytorch_zoo.unet as unet
 from models.other.unet import UNetSiamese
+from models.other.segformer import SiameseSegformer_b0, SiameseSegformer_b1
 from models.other.siamunetdif import SiamUnet_diff
 from models.other.siamnestedunet import SNUNet_ECAM
 from utils.log import debug_msg, log_var_details, dump_command_line_args
@@ -71,7 +72,9 @@ models = {
     'seresnext101': unet.SeResnext101_32x4d_upsample,
     'unet_siamese':UNetSiamese,
     'unet_siamese_dif':SiamUnet_diff,
-    'nestedunet_siamese':SNUNet_ECAM
+    'nestedunet_siamese':SNUNet_ECAM,
+    'segformer_b0_siamese': SiameseSegformer_b0,
+    'segformer_b1_siamese': SiameseSegformer_b1
 }
 
 if __name__ ==  "__main__":
