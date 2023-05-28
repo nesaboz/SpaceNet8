@@ -108,8 +108,6 @@ if __name__ == "__main__":
 
     # init the training log
     with open(training_log_csv, 'w', newline='') as csvfile:
-        # TODO: buildings: add precision, recall, f1 score
-        # TODO: road speed: confusion matrix
         fieldnames = ['epoch', 'lr', 'train_tot_loss', 'train_bce', 'train_dice', 'train_focal', 'train_road_loss',
                                      'val_tot_loss', 'val_bce', 'val_dice', 'val_focal', 'val_road_loss']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -196,15 +194,16 @@ if __name__ == "__main__":
                 log_var_details('building_pred', building_pred)
                 log_var_details('bce_l', bce_l)
                 log_var_details('y_pred', y_pred)
-                # preimg, Type: <class 'torch.Tensor'>, Shape: torch.Size([4, 3, 1300, 1300])
-                # postimg, Type: <class 'torch.Tensor'>, Shape: torch.Size([4])
-                # building, Type: <class 'torch.Tensor'>, Shape: torch.Size([4, 1, 1300, 1300])
-                # road, Type: <class 'torch.Tensor'>, Shape: torch.Size([4])
-                # roadspeed, Type: <class 'torch.Tensor'>, Shape: torch.Size([4, 8, 1300, 1300])
-                # flood, Type: <class 'torch.Tensor'>, Shape: torch.Size([4])
-                # building_pred, Type: <class 'torch.Tensor'>, Shape: torch.Size([4, 1, 1300, 1300])
-                # bce_l, Type: <class 'torch.Tensor'>, Shape: torch.Size([])
-                # y_pred, Type: <class 'torch.Tensor'>, Shape: torch.Size([4, 8, 1300, 1300])
+                # preimg, Type: <class 'torch.Tensor'>, Shape: torch.Size([4, 3, 1300, 1300]), Dtype: torch.float32
+                # postimg, Type: <class 'torch.Tensor'>, Shape: torch.Size([4]), Dtype: torch.int64
+                # building, Type: <class 'torch.Tensor'>, Shape: torch.Size([4, 1, 1300, 1300]), Dtype: torch.float32
+                # road, Type: <class 'torch.Tensor'>, Shape: torch.Size([4]), Dtype: torch.int64
+                # roadspeed, Type: <class 'torch.Tensor'>, Shape: torch.Size([4, 8, 1300, 1300]), Dtype: torch.float32
+                # flood, Type: <class 'torch.Tensor'>, Shape: torch.Size([4]), Dtype: torch.int64
+                # building_pred, Type: <class 'torch.Tensor'>, Shape: torch.Size([4, 1, 1300, 1300]), Dtype: torch.float32
+                # bce_l, Type: <class 'torch.Tensor'>, Shape: torch.Size([]), Dtype: torch.float32
+                # y_pred, Type: <class 'torch.Tensor'>, Shape: torch.Size([4, 8, 1300, 1300]), Dtype: torch.float32
+
 
             print(f"    {str(np.round(i/len(train_dataloader)*100,2))}%: TRAIN LOSS: {(train_loss_val*1.0/(i+1)).item()}", end="\r")
         print()

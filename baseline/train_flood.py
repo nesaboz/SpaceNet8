@@ -196,14 +196,13 @@ if __name__ ==  "__main__":
                 log_var_details('roadspeed', roadspeed)
                 log_var_details('flood', flood)
                 log_var_details('flood_pred', flood_pred)
-                # preimg, Type: <class 'torch.Tensor'>, Shape: torch.Size([2, 3, 1300, 1300])
-                # postimg, Type: <class 'torch.Tensor'>, Shape: torch.Size([2, 3, 1300, 1300])
-                # building, Type: <class 'torch.Tensor'>, Shape: torch.Size([2])
-                # road, Type: <class 'torch.Tensor'>, Shape: torch.Size([2])
-                # roadspeed, Type: <class 'torch.Tensor'>, Shape: torch.Size([2])
-                # flood, Type: <class 'torch.Tensor'>, Shape: torch.Size([2, 1300, 1300])
-                # flood_pred, Type: <class 'torch.Tensor'>, Shape: torch.Size([2, 5, 1300, 1300])
-                # batch size = 2, num classes = 5, H = 1300, W = 1300
+                # preimg, Type: <class 'torch.Tensor'>, Shape: torch.Size([2, 3, 1300, 1300]), Dtype: torch.float32
+                # postimg, Type: <class 'torch.Tensor'>, Shape: torch.Size([2, 3, 1300, 1300]), Dtype: torch.float32
+                # building, Type: <class 'torch.Tensor'>, Shape: torch.Size([2]), Dtype: torch.int64
+                # road, Type: <class 'torch.Tensor'>, Shape: torch.Size([2]), Dtype: torch.int64
+                # roadspeed, Type: <class 'torch.Tensor'>, Shape: torch.Size([2]), Dtype: torch.int64
+                # flood, Type: <class 'torch.Tensor'>, Shape: torch.Size([2, 1300, 1300]), Dtype: torch.int64
+                # flood_pred, Type: <class 'torch.Tensor'>, Shape: torch.Size([2, 5, 1300, 1300]), Dtype: torch.float32
 
             print(f"    {str(np.round(i/len(train_dataloader)*100,2))}%: TRAIN LOSS: {(train_loss_val*1.0/(i+1)).item()}", end="\r")
         print()
