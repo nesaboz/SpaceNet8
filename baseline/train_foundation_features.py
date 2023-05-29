@@ -12,6 +12,7 @@ import torch.nn.functional as F
 from datasets.datasets import SN8Dataset
 from core.losses import focal, soft_dice_loss
 import models.pytorch_zoo.unet as unet
+import models.other.segformer as segformer
 from models.other.unet import UNet
 from utils.log import debug_msg, log_var_details, dump_command_line_args
 
@@ -66,7 +67,9 @@ models = {
     'seresnet152': unet.SeResnet152_upsample,
     'seresnext50': unet.SeResnext50_32x4d_upsample,
     'seresnext101': unet.SeResnext101_32x4d_upsample,
-    'unet':UNet
+    'unet':UNet,
+    'segformer_b0': segformer.Segformer_b0,
+    'segformer_b1': segformer.Segformer_b1,
 }
 
 if __name__ == "__main__":

@@ -5,11 +5,11 @@ from transformers import SegformerForSemanticSegmentation
 from .unet import OutConv, Up
 
 class SiameseSegformer(nn.Module):
-    def __init__(self, pretrained_model_name_or_path='nvidia/mit-b0', n_classes=5):
+    def __init__(self, num_classes=5, pretrained_model_name_or_path='nvidia/mit-b0'):
         super().__init__()
         self.segformer = SegformerForSemanticSegmentation.from_pretrained(pretrained_model_name_or_path, num_labels=64)
         self.penultimate_conv = nn.Conv2d(128, 64, kernel_size=3, padding=1)
-        self.outc1 = OutConv(64, n_classes)
+        self.outc1 = OutConv(64, num_classes)
 
     def forward_once(self, x):
         return self.segformer(x).logits
@@ -24,15 +24,64 @@ class SiameseSegformer(nn.Module):
         x = F.interpolate(x, scale_factor=4)
         return x
 
-# TODO(adrs): Non-siamese version
+class Upscale(nn.Module):
+    def __init__(self, scale_factor=4):
+        super().__init__()
+        self.scale_factor = scale_factor
+
+    def forward(self, x):
+        return F.interpolate(x, scale_factor=self.scale_factor)
+
+class Segformer(nn.Module):
+    def __init__(self, num_classes=[1, 8], pretrained_model_name_or_path='nvidia/mit-b0'):
+        super().__init__()
+        num_filters = 64
+        self.segformer = SegformerForSemanticSegmentation.from_pretrained(pretrained_model_name_or_path, num_labels=num_filters)
+        self.num_classes = num_classes
+        assert(isinstance(self.num_classes, int) or isinstance(self.num_classes, list))
+
+        if isinstance(num_classes, int):
+            self.final = self.make_final_classifier(num_filters, num_classes)
+        else: # num_classes is a list. see assert above. 
+            self.final1 = self.make_final_classifier(num_filters, num_classes[0])
+            self.final2 = self.make_final_classifier(num_filters, num_classes[1])
+
+    def make_final_classifier(self, in_filters, num_classes):
+        return nn.Sequential(
+            nn.Conv2d(in_filters, num_classes, 3, padding=1),
+            Upscale(4)
+        )
+
+    def make_final_classifier2(self, in_filters, num_classes):
+        return nn.Sequential(
+                nn.Conv2d(in_filters, 32, 3, padding=1),
+                nn.Conv2d(32, num_classes, 3, padding=1),
+                Upscale(4))
+
+    def forward(self, x):
+        x = self.segformer(x).logits
+        if isinstance(self.num_classes, int):
+            return self.final(x)
+        else:
+            f1 = self.final1(x)
+            f2 = self.final2(x)
+            return f1, f2
 
 # https://huggingface.co/docs/transformers/v4.29.1/en/model_doc/segformer#overview
+class Segformer_b0(Segformer):
+    def __init__(self, num_classes, num_channels=3):
+        super().__init__(num_classes, 'nvidia/mit-b0')
+
+class Segformer_b1(Segformer):
+    def __init__(self, num_classes, num_channels=3):
+        super().__init__(num_classes, 'nvidia/mit-b1')
+
 class SiameseSegformer_b0(SiameseSegformer):
     def __init__(self, num_classes=5, num_channels=3):
-        super().__init__('nvidia/mit-b0', num_classes)
+        super().__init__(num_classes, 'nvidia/mit-b0')
 
 class SiameseSegformer_b1(SiameseSegformer):
     def __init__(self, num_classes=5, num_channels=3):
-        super().__init__('nvidia/mit-b1', num_classes)
+        super().__init__(num_classes, 'nvidia/mit-b1')
 
 # Models larger than b1 do not fit in P6000 GPU memory

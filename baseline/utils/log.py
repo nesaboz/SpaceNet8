@@ -1,6 +1,6 @@
 import sys
 
-debug = True
+debug = False
 def debug_msg(msg):
     'Prints a message if debuggign is enabled'
     if debug:

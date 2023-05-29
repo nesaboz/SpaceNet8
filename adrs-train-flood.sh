@@ -7,9 +7,10 @@ SAVE_DIR="/tmp/share/runs/adrs/train-flood-$(date +%Y-%m-%d-%H%M%S)"
 MODEL_NAME=resnet34_siamese
 #MODEL_NAME=segformer_b0_siamese
 
-# Full dataset
-# TRAIN_CSV="/tmp/share/runs/sn8_data_train.csv"
-# VAL_CSV="/tmp/share/runs/sn8_data_val.csv"
+# # Full dataset
+# TRAIN_CSV="/tmp/share/data/spacenet8/sn8_data_train.csv"
+# VAL_CSV="/tmp/share/data/spacenet8/sn8_data_val.csv"
+
 
 # Partial dataset to speed up test runs
 TRAIN_CSV="/tmp/share/data/spacenet8/adrs-small-train.csv"
