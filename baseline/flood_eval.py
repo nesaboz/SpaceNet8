@@ -18,6 +18,7 @@ from foundation_eval import write_to_csv_file, get_eval_results_path
 import models.pytorch_zoo.unet as unet
 from datasets.datasets import SN8Dataset
 from models.other.unet import UNetSiamese
+import models.other.segformer as segformer
 from utils.utils import write_geotiff
 
 def parse_args():
@@ -154,11 +155,19 @@ models = {
     'seresnet152': unet.SeResnet152_upsample,
     'seresnext50': unet.SeResnext50_32x4d_upsample,
     'seresnext101': unet.SeResnext101_32x4d_upsample,
-    'unet_siamese': UNetSiamese
+    'unet_siamese': UNetSiamese,
+    'segformer_b0_siamese': segformer.SiameseSegformer_b0,
+    'segformer_b1_siamese': segformer.SiameseSegformer_b1,
 }
 
 
-def run_flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu=0):
+def flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu=0, create_folders=True):
+      
+    if create_folders and save_fig_dir:
+        save_fig_dir.mkdir(parents=True, exist_ok=True)
+    if create_folders and save_preds_dir:
+        save_preds_dir.mkdir(parents=True, exist_ok=True)
+    
 
     num_classes = 5
     img_size = (1300,1300)
@@ -205,13 +214,13 @@ def run_flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name,
     with torch.no_grad():
         for i, data in enumerate(val_dataloader):
             
-            print_top_memory_variables(locals().copy())
+            # print_top_memory_variables(locals().copy())
             
             current_image_filename = val_dataset.get_image_filename(i)
             print("evaluating: ", i, os.path.basename(current_image_filename))
             preimg, postimg, building, road, roadspeed, flood = data
 
-            print_cpu_memory()
+            # print_cpu_memory()
             
             preimg = preimg.cuda().float() #siamese
             postimg = postimg.cuda().float() #siamese
@@ -333,4 +342,4 @@ if __name__ == "__main__":
     model_name = args.model_name
     gpu = args.gpu
     
-    run_flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu)
+    flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu)
