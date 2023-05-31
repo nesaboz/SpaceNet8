@@ -43,7 +43,9 @@ def parse_args():
     parser.add_argument("--gpu",
                         type=int,
                         default=0)
-    
+    parser.add_argument("--checkpoint",
+                        type=str,
+                        default=None)
     args = parser.parse_args()
     return args
 
@@ -77,16 +79,8 @@ models = {
     'segformer_b1_siamese': segformer.SiameseSegformer_b1,
 }
 
-if __name__ ==  "__main__":
-    args = parse_args()
-    train_csv = args.train_csv
-    val_csv = args.val_csv
-    save_dir = args.save_dir
-    model_name = args.model_name
-    initial_lr = args.lr
-    batch_size = args.batch_size
-    n_epochs = args.n_epochs
-    gpu = args.gpu
+
+def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size, n_epochs, gpu, checkpoint_path=None):
     
     now = datetime.now() 
     date_total = str(now.strftime("%d-%m-%Y-%H-%M"))
@@ -150,6 +144,15 @@ if __name__ ==  "__main__":
         celoss = nn.CrossEntropyLoss(weight=class_weights)
 
     best_loss = np.inf
+    
+    if checkpoint_path:
+        # load checkpoint
+        print('Loaded checkpoint.')
+        model_state_dict = torch.load(checkpoint_path)
+        model.load_state_dict(model_state_dict)
+    else:
+        print('No checkpoint provided. Starting new training ...')
+
     for epoch in range(n_epochs):
         print(f"EPOCH {epoch}")
 
@@ -277,3 +280,19 @@ if __name__ ==  "__main__":
             print(f"    loss improved from {np.round(best_loss, 6)} to {np.round(epoch_val_loss, 6)}. saving best model...")
             best_loss = epoch_val_loss
             save_best_model(model, best_model_path)
+
+
+if __name__ ==  "__main__":
+    args = parse_args()
+    train_csv = args.train_csv
+    val_csv = args.val_csv
+    save_dir = args.save_dir
+    model_name = args.model_name
+    initial_lr = args.lr
+    batch_size = args.batch_size
+    n_epochs = args.n_epochs
+    gpu = args.gpu
+    checkpoint_path = args.checkpoint
+    
+    train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size, n_epochs, gpu, checkpoint_path)
+    

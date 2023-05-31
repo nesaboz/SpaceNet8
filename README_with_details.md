@@ -173,7 +173,7 @@ Now we can train the Foundation network:
 ```
 python baseline/train_foundation_features.py --train_csv /tmp/share/data/spacenet8/sn8_data_train.csv --val_csv /tmp/share/data/spacenet8/sn8_data_val.csv --save_dir /tmp/share/runs/spacenet8/nenad/foundation --model_name resnet34 --lr 0.0001 --batch_size 4 --n_epochs 1 --gpu 0
 ```
-P6000 can handle batch size of 4.
+P6000 can handle batch size of 4 for resnet32, 2 for segformer_b0.
 
 ### Inference
 
