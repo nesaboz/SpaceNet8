@@ -3,6 +3,8 @@ import os
 import argparse
 import datetime
 from datetime import datetime
+import time
+import psutil
 
 import torch
 import torch.nn as nn
@@ -16,6 +18,8 @@ import models.other.segformer as segformer
 from models.other.siamunetdif import SiamUnet_diff
 from models.other.siamnestedunet import SNUNet_ECAM
 from utils.log import debug_msg, log_var_details, dump_command_line_args
+from utils.log import print_gpu_memory, print_cpu_memory
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -80,8 +84,11 @@ models = {
 }
 
 
+
+
 def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size, n_epochs, gpu, checkpoint_path=None):
     
+    tic = time.time()
     now = datetime.now() 
     date_total = str(now.strftime("%d-%m-%Y-%H-%M"))
 
@@ -166,7 +173,7 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
         train_building_loss = 0
         for i, data in enumerate(train_dataloader):
             optimizer.zero_grad()
-
+                
             preimg, postimg, building, road, roadspeed, flood = data
 
             preimg = preimg.cuda().float()
@@ -187,6 +194,9 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
             #dice_soft_l = soft_dice_loss(y_pred, flood)
             #loss = (focal_loss_weight * focal_l + soft_dice_loss_weight * dice_soft_l)
             loss = celoss(flood_pred, flood.long())
+            
+            if i % 10 == 0:
+                print_gpu_memory()
 
             train_loss_val+=loss
             #train_focal_loss += focal_l
@@ -275,12 +285,15 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
 
         save_model_checkpoint(model, checkpoint_model_path)
 
+        toc = time.time()
+        print(f"Epoch took: {(toc-tic)/60.0:.1f} minutes")
+
         epoch_val_loss = val_metrics["val_tot_loss"]
         if epoch_val_loss < best_loss:
             print(f"    loss improved from {np.round(best_loss, 6)} to {np.round(epoch_val_loss, 6)}. saving best model...")
             best_loss = epoch_val_loss
             save_best_model(model, best_model_path)
-
+        
 
 if __name__ ==  "__main__":
     args = parse_args()
