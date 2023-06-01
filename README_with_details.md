@@ -78,7 +78,7 @@ git clone git@github.com:nesaboz/SpaceNet8.git
 
 Build docker image (will take a few minutes):
 ```
-sudo nvidia-docker build -t sn8/baseline:1.0 ~/share/SpaceNet8/docker 
+sudo nvidia-docker build -t sn8/baseline:1.0 <path/to/SpaceNet8/docker/folder> 
 ```
 There is a way to avoid constant `sudo` but requires messing with some json config files. For now just use `sudo`.
 
