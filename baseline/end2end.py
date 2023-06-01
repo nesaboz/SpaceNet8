@@ -1,6 +1,7 @@
 import argparse
-import os.path
+import json
 import matplotlib.pyplot as plt
+import os.path
 
 from train_foundation_features import train_foundation
 from train_flood import train_flood
@@ -13,6 +14,9 @@ Directory Structure
 
 <save_dir>/
   args.txt - command line args for this script
+  metrics.json - training and evaluation metrics (If any part of training or
+                 evaluation crashes, these are not saved. That is why there
+                 still are log.csv and eval_results.csv files)
   foundation/
     best_model.pth - best foundation model
     log.csv - log of training metrics per-epoch
@@ -98,16 +102,26 @@ def run(
         foundation_batch_size=2,
         foundation_n_epochs=50,
         foundation_checkpoint=None,
+        foundation_model_args={},
+        foundation_kwargs={},
         flood_model_name=None,
         flood_lr=0.0001,
         flood_batch_size=2,
         flood_n_epochs=50,
-        flood_checkpoint=None):
-
+        flood_checkpoint=None,
+        flood_model_args={},
+        flood_kwargs={}):
+    '''
+    Trains and evaluates a foundation features and flood network and returns
+    training and evaluation metrics. This function is designed to be used by
+    cross-validation routines.
+    '''
+    # TODO: save args to file in case this function is used for hyperparameter search
+    metrics = {}
     if foundation_model_name is not None:
         foundation_dir = os.path.join(args.save_dir, 'foundation')
         print('Training foundation model...')
-        train_foundation(
+        metrics['foundation training'] = train_foundation(
               train_csv=args.train_csv, 
               val_csv=args.val_csv,
               save_dir=foundation_dir,
@@ -116,9 +130,12 @@ def run(
               batch_size=args.foundation_batch_size,
               n_epochs=args.foundation_n_epochs,
               gpu=args.gpu,
-              checkpoint_path=args.foundation_checkpoint)
+              checkpoint_path=args.foundation_checkpoint,
+              foundation_model_args=foundation_model_args,
+              **foundation_kwargs)
         print('Evaluating foundation model...')
-        foundation_eval(model_path=os.path.join(foundation_dir, 'best_model.pth'), 
+        metrics['foundation eval'] = foundation_eval(
+                model_path=os.path.join(foundation_dir, 'best_model.pth'), 
                 in_csv=args.val_csv, 
                 save_fig_dir=os.path.join(foundation_dir, 'pngs'),
                 save_preds_dir=os.path.join(foundation_dir, 'tiffs'),
@@ -127,7 +144,7 @@ def run(
     if flood_model_name is not None:
         flood_dir = os.path.join(args.save_dir, 'flood')
         print('Training flood model...')
-        train_flood(
+        metrics['flood training'] = train_flood(
               train_csv=args.train_csv, 
               val_csv=args.val_csv,
               save_dir=flood_dir,
@@ -136,17 +153,22 @@ def run(
               batch_size=args.flood_batch_size,
               n_epochs=args.flood_n_epochs,
               gpu=args.gpu,
-              checkpoint_path=args.flood_checkpoint)
+              checkpoint_path=args.flood_checkpoint,
+              flood_model_args=flood_model_args,
+              **flood_kwargs)
 
         print('Evaluating flood model...')
-        flood_eval(model_path=os.path.join(flood_dir, 'best_model.pth'),
+        metrics['flood eval'] = flood_eval(
+               model_path=os.path.join(flood_dir, 'best_model.pth'),
                in_csv=args.val_csv, 
                save_fig_dir=os.path.join(flood_dir, 'pngs'),
                save_preds_dir=os.path.join(flood_dir, 'tiffs'),
                model_name=args.flood_model_name)
-    # TODO: Return a dictionary of metrics to allow this function to be used
-    # for hyper-parameter search.
-    # TODO: Save additional metrics and generate additional plots
+    # TODO: generate plots
+    with open(os.path.join(args.save_dir, 'metrics.json'), 'w') as f:
+        json.dump({
+            key:(val.to_json_object() if hasattr(val, 'to_json_object') else val) for key, val in metrics.items()}, f)
+    return metrics
 
 if __name__ == '__main__':
     args = parse_args()

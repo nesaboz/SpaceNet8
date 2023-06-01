@@ -129,13 +129,21 @@ models = {
     'segformer_b1': segformer.Segformer_b1
 }
 
+class EvalMetrics:
+    def __init__(self):
+        self.metrics_by_class = {}
+
+    def add_class_metrics(self, class_label, metrics):
+        self.metrics_by_class[class_label] = metrics
+
+    def to_json_object(self):
+        return self.metrics_by_class
 
 def foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu=0, create_folders=True):
-    
     if create_folders and save_fig_dir:
-        save_fig_dir.mkdir(parents=True, exist_ok=True)
+        os.mkdir(save_fig_dir)
     if create_folders and save_preds_dir:
-        save_preds_dir.mkdir(parents=True, exist_ok=True)
+        os.mkdir(save_preds_dir)
     
     img_size = (1300,1300)
 
@@ -268,6 +276,7 @@ def foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name
                 #    time.sleep(2) 
                 save_figure_filename = os.path.join(save_fig_dir, os.path.basename(current_image_filename)[:-4]+"_pred.png")
                 make_prediction_png_roads_buildings(preimg, gts, predictions, save_figure_filename)
+    foundation_eval_metrics = EvalMetrics()
     
     print()
     data = ["building", "road"]
@@ -285,7 +294,10 @@ def foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name
         print("iou: ", iou)
         print()
 
+        foundation_eval_metrics.add_class_metrics(data[i],
+                {'precision':precision, 'recall':recall, 'f1':f1, 'iou':iou})
         write_to_csv_file(datetime_str, model_name, data[i], precision, recall, f1, iou, eval_results_file)
+    return foundation_eval_metrics
 
 
 def get_eval_results_path(save_fig_dir, save_preds_dir):
