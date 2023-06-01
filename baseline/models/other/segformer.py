@@ -22,7 +22,6 @@ class SiameseSegformer(nn.Module):
         x = self.outc1(x)
         # Segformer reduces spatial dimensions by factor of 4, so need to upscale
         x = F.interpolate(x, scale_factor=4)
-        nn.Conv2dTranspose(128, 64, kernel_size=3, stride=2, padding=1, output_padding=1)
         return x
 
 class Upscale(nn.Module):

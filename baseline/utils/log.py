@@ -70,7 +70,3 @@ def print_cpu_memory(verbose=True):
         print(f"Percentage of used CPU memory: {percent_memory}%")
     else:
         print(f"Percentage of used CPU memory: {percent_memory}%")
-
-
-def count_parameters(model):
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
