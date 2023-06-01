@@ -8,13 +8,8 @@ class SiameseSegformer(nn.Module):
     def __init__(self, num_classes=5, pretrained_model_name_or_path='nvidia/mit-b0'):
         super().__init__()
         self.segformer = SegformerForSemanticSegmentation.from_pretrained(pretrained_model_name_or_path, num_labels=64)
-        freeze_model(self.segformer)
-        Up(128, 64, bilinear=True)
-        
-        
-        # self.penultimate_conv = nn.Conv2d(128, 64, kernel_size=3, padding=1)
-        
-        # self.outc1 = OutConv(64, num_classes)
+        self.penultimate_conv = nn.Conv2d(128, 64, kernel_size=3, padding=1)
+        self.outc1 = OutConv(64, num_classes)
 
     def forward_once(self, x):
         return self.segformer(x).logits
@@ -23,10 +18,10 @@ class SiameseSegformer(nn.Module):
         out1 = self.forward_once(x1)
         out2 = self.forward_once(x2)
         x = torch.cat([out1, out2], dim=1)
-        # x = self.penultimate_conv(x)
-        # x = self.outc1(x)
-        # # Segformer reduces spatial dimensions by factor of 4, so need to upscale
-        # x = F.interpolate(x, scale_factor=4)
+        x = self.penultimate_conv(x)
+        x = self.outc1(x)
+        # Segformer reduces spatial dimensions by factor of 4, so need to upscale
+        x = F.interpolate(x, scale_factor=4)
         nn.Conv2dTranspose(128, 64, kernel_size=3, stride=2, padding=1, output_padding=1)
         return x
 

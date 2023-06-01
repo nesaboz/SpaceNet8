@@ -195,8 +195,8 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
             #loss = (focal_loss_weight * focal_l + soft_dice_loss_weight * dice_soft_l)
             loss = celoss(flood_pred, flood.long())
             
-            if i % 10 == 0:
-                print_gpu_memory()
+            # if i % 10 == 0:
+            #     print_gpu_memory()
 
             train_loss_val+=loss
             #train_focal_loss += focal_l
