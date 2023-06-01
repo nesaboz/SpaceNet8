@@ -13,7 +13,7 @@ import torch.nn as nn
 import psutil
 import datetime
 
-from foundation_eval import write_to_csv_file, get_eval_results_path
+from foundation_eval import write_to_csv_file, get_eval_results_path, EvalMetrics
 
 import models.pytorch_zoo.unet as unet
 from datasets.datasets import SN8Dataset
@@ -160,15 +160,12 @@ models = {
     'segformer_b1_siamese': segformer.SiameseSegformer_b1,
 }
 
-
 def flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu=0, create_folders=True):
-      
     if create_folders and save_fig_dir:
-        save_fig_dir.mkdir(parents=True, exist_ok=True)
+        os.mkdir(save_fig_dir)
     if create_folders and save_preds_dir:
-        save_preds_dir.mkdir(parents=True, exist_ok=True)
+        os.mkdir(save_preds_dir)
     
-
     num_classes = 5
     img_size = (1300,1300)
 
@@ -319,6 +316,7 @@ def flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu
     
     datetime_str = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
     
+    flood_eval_metrics = EvalMetrics()
     for j in range(len(classes)):
         print(f"class: {classes[j]}")
         precision = running_tp[j] / (running_tp[j] + running_fp[j] + 0.00001)
@@ -329,8 +327,11 @@ def flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu
         print("  recall: ", recall)
         print("  f1: ", f1)
         print("  iou: ", iou)
+        flood_eval_metrics.add_class_metrics(classes[j],
+                {'precision':precision, 'recall':recall, 'f1':f1, 'iou':iou})
         
         write_to_csv_file(datetime_str, model_name, classes[j], precision, recall, f1, iou, eval_results_file)
+    return flood_eval_metrics
         
 
 if __name__ == "__main__":

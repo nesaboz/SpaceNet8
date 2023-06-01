@@ -53,6 +53,23 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+class FloodTrainingMetrics:
+    def __init__(self):
+        self.best_loss = 9999999999
+        self.epochs = []
+
+    # TODO: track loss over each iteration
+
+    def add_epoch(self, metrics):
+        self.epochs.append(metrics)
+        loss = metrics['val_tot_loss']
+        if loss < self.best_loss:
+            self.best_loss = loss
+
+    def to_json_object(self):
+        return {'best_loss': self.best_loss, 'epochs': self.epochs}
+
+# TODO: remove once flood training metrics persists each update
 def write_metrics_epoch(epoch, fieldnames, train_metrics, val_metrics, training_log_csv):
     epoch_dict = {"epoch":epoch}
     merged_metrics = {**epoch_dict, **train_metrics, **val_metrics}
@@ -83,17 +100,26 @@ models = {
     'segformer_b1_siamese': segformer.SiameseSegformer_b1,
 }
 
-
-
-
-def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size, n_epochs, gpu, checkpoint_path=None):
+def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size, n_epochs, gpu, checkpoint_path=None, model_args={}, **kwargs):
+    '''
+    train_csv - CSV files listing training examples
+    val_csv - CSV files listing validation examples
+    save_dir - directory to save model checkpoints, training logs, and other files.
+    model_name - type of model architecture to use
+    initial_lr - initial learning rate
+    batch_size - batch size
+    n_epochs - number of epochs to train for
+    gpu - which GPU to use
+    checkpoint_path - existing model weights to start training from
+    model_args - Extra arguments to pass to the model constructor.
+    **kwargs - extra arguments
+    '''
     
     tic = time.time()
     now = datetime.now() 
     date_total = str(now.strftime("%d-%m-%Y-%H-%M"))
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu)
-
 
     soft_dice_loss_weight = 0.25
     focal_loss_weight = 0.75
@@ -108,16 +134,11 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
     SEED=12
     torch.manual_seed(SEED)
     
-    assert(os.path.exists(save_dir))
-    save_dir = os.path.join(save_dir, f"{model_name}_lr{'{:.2e}'.format(initial_lr)}_bs{batch_size}_{date_total}")
-
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
-        os.chmod(save_dir, 0o777)
     checkpoint_model_path = os.path.join(save_dir, "model_checkpoint.pth")
     best_model_path = os.path.join(save_dir, "best_model.pth")
     training_log_csv = os.path.join(save_dir, "log.csv")
-    dump_command_line_args(os.path.join(save_dir, 'args.txt'))
 
     # init the training log
     with open(training_log_csv, 'w', newline='') as csvfile:
@@ -125,6 +146,7 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
                                      'val_tot_loss']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
+    training_metrics = FloodTrainingMetrics()
 
     train_dataset = SN8Dataset(train_csv,
                             data_to_load=["preimg","postimg","flood"],
@@ -137,13 +159,14 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
 
     #model = models["resnet34"](num_classes=5, num_channels=6)
     if model_name == "unet_siamese":
-        model = UNetSiamese(3, num_classes, bilinear=True)
+        model = UNetSiamese(3, num_classes, bilinear=True, **model_args)
     else:
-        model = models[model_name](num_classes=num_classes, num_channels=3)
+        model = models[model_name](num_classes=num_classes, num_channels=3, **model_args)
 
     model.cuda()
     optimizer = torch.optim.Adam(model.parameters(), lr=initial_lr)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=40, gamma=0.5)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
+            step_size=kwargs.get('step_size', 40), gamma=kwargs.get('gamma', 0.5))
     
     if class_weights is None:
         celoss = nn.CrossEntropyLoss()
@@ -286,14 +309,17 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
         save_model_checkpoint(model, checkpoint_model_path)
 
         toc = time.time()
-        print(f"Epoch took: {(toc-tic)/60.0:.1f} minutes")
+        epoch_duration = toc - tic
+        print(f"Epoch took: {epoch_duration/60.0:.1f} minutes")
+
+        training_metrics.add_epoch({**train_metrics, **val_metrics, 'epoch_duration': epoch_duration})
 
         epoch_val_loss = val_metrics["val_tot_loss"]
         if epoch_val_loss < best_loss:
             print(f"    loss improved from {np.round(best_loss, 6)} to {np.round(epoch_val_loss, 6)}. saving best model...")
             best_loss = epoch_val_loss
             save_best_model(model, best_model_path)
-        
+        return training_metrics
 
 if __name__ ==  "__main__":
     args = parse_args()
@@ -307,5 +333,5 @@ if __name__ ==  "__main__":
     gpu = args.gpu
     checkpoint_path = args.checkpoint
     
+    dump_command_line_args(os.path.join(save_dir, 'args.txt'))
     train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size, n_epochs, gpu, checkpoint_path)
-    
