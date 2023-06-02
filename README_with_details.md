@@ -42,7 +42,7 @@ This has already done and is here for reference.
 
 ### Create a shared drive in Paperspace
 
-Shared drive is an excelent way to share drive accross machines. 
+Shared drive is an excellent way to share data across machines. 
 
 Machines do have to be on the same **private network**, which is created from a network tab on Paperspace Core.
 
@@ -55,14 +55,19 @@ Once you ssh, you will need several pieces of information, follow [this](https:/
 I've used SHARE_FOLDERNAME as `/home/paperspace/share`:
 
 ```zsh
-sudo vim /etc/fstab  # use any editor of your choce btw, add the following line at the end: 
-# //YOUR_SHARED_DRIVE_IP/YOURSHARE   SHARE_FOLDERNAME  cifs  user=USERNAME,password=PASSWORD,rw,uid=1000,gid=1000,users 0 0
+sudo vim /etc/fstab  # use any editor of your choice btw, add the following line at the end: 
+# //YOUR_SHARED_DRIVE_IP/YOURSHARE   /home/paperspace/SHARE_FOLDERNAME  cifs  user=USERNAME,password=PASSWORD,rw,uid=1000,gid=1000,users 0 0
 mkdir SHARE_FOLDERNAME  # if doesn't exist
 sudo chown paperspace:paperspace SHARE_FOLDERNAME  # this is needed ONLY if SHARE_FOLDERNAME is outside your home directory 
 sudo apt-get update
 sudo apt install cifs-utils
 sudo mount SHARE_FOLDERNAME  # MUST use sudo here!
 df
+```
+
+To unmount a drive use `umount` command:
+```zsh
+sudo umount SHARE_FOLDERNAME
 ```
 
 ### Download SpaceNet8 repo and build docker image
