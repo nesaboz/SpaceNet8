@@ -319,7 +319,7 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
             print(f"    loss improved from {np.round(best_loss, 6)} to {np.round(epoch_val_loss, 6)}. saving best model...")
             best_loss = epoch_val_loss
             save_best_model(model, best_model_path)
-        return training_metrics
+    return training_metrics
 
 if __name__ ==  "__main__":
     args = parse_args()
