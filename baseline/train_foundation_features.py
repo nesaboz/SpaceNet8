@@ -16,6 +16,11 @@ import models.other.segformer as segformer
 from models.other.unet import UNet
 from utils.log import debug_msg, log_var_details, dump_command_line_args
 
+import inspect
+from utils.utils import count_parameters
+from utils.log import get_fcn_params, dump_to_json
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--train_csv",
@@ -92,20 +97,20 @@ models = {
 
 def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size, n_epochs, gpu, checkpoint_path=None, model_args={}, **kwargs):
     '''
-    train_csv - CSV files listing training examples
-    val_csv - CSV files listing validation examples
-    save_dir - directory to save model checkpoints, training logs, and other files.
-    model_name - type of model architecture to use
-    initial_lr - initial learning rate
-    batch_size - batch size
-    n_epochs - number of epochs to train for
-    gpu - which GPU to use
-    checkpoint_path - existing model weights to start training from
-    model_args - Extra arguments to pass to the model constructor.
-    **kwargs - extra arguments
+    train_csv (str) - CSV files listing training examples
+    val_csv (str) - CSV files listing validation examples
+    save_dir (str) - directory to save model checkpoints, training logs, and other files.
+    model_name (str) - type of model architecture to use
+    initial_lr (float)- initial learning rate
+    batch_size (int) - batch size
+    n_epochs (int) - number of epochs to train for
+    gpu (int) - which GPU to use
+    checkpoint_path (str) - existing model weights to start training from
+    model_args (dict) - Extra arguments to pass to the model constructor.
+    **kwargs (dict) - extra optimizer arguments
     '''
-    now = datetime.now() 
-    date_total = str(now.strftime("%d-%m-%Y-%H-%M"))
+    
+    params = get_fcn_params(inspect.currentframe())
     
     img_size = (1300,1300)
     
@@ -120,7 +125,7 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
     torch.manual_seed(SEED)
 
     if not os.path.exists(save_dir):
-        os.mkdir(save_dir)
+        os.makedirs(save_dir)
     checkpoint_model_path = os.path.join(save_dir, "model_checkpoint.pth")
     best_model_path = os.path.join(save_dir, "best_model.pth")
     training_log_csv = os.path.join(save_dir, "log.csv")
@@ -164,6 +169,10 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
     else:
         print('No checkpoint provided. Starting new training ...')
 
+    parameter_count = count_parameters(model)
+    params.update({'parameter_count': parameter_count})
+    dump_to_json(save_dir, params) 
+    
     for epoch in range(n_epochs):
         print(f"EPOCH {epoch}")
         tic = time.time()
@@ -295,7 +304,8 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
             print(f"    loss improved from {np.round(best_loss, 6)} to {np.round(epoch_val_loss, 6)}. saving best model...")
             best_loss = epoch_val_loss
             save_model_checkpoint(model, best_model_path)
-        return training_metrics
+            
+    return training_metrics
 
 if __name__ == "__main__":
     args = parse_args()

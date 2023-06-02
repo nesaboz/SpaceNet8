@@ -18,7 +18,10 @@ import models.other.segformer as segformer
 from models.other.siamunetdif import SiamUnet_diff
 from models.other.siamnestedunet import SNUNet_ECAM
 from utils.log import debug_msg, log_var_details, dump_command_line_args
-from utils.log import print_gpu_memory, print_cpu_memory
+
+import inspect
+from utils.utils import count_parameters
+from utils.log import get_fcn_params, dump_to_json
 
 
 def parse_args():
@@ -116,8 +119,7 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
     '''
     
     tic = time.time()
-    now = datetime.now() 
-    date_total = str(now.strftime("%d-%m-%Y-%H-%M"))
+    params = get_fcn_params(inspect.currentframe())
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu)
 
@@ -135,7 +137,7 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
     torch.manual_seed(SEED)
     
     if not os.path.exists(save_dir):
-        os.mkdir(save_dir)
+        os.makedirs(save_dir)
     checkpoint_model_path = os.path.join(save_dir, "model_checkpoint.pth")
     best_model_path = os.path.join(save_dir, "best_model.pth")
     training_log_csv = os.path.join(save_dir, "log.csv")
@@ -182,6 +184,10 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
         model.load_state_dict(model_state_dict)
     else:
         print('No checkpoint provided. Starting new training ...')
+
+    parameter_count = count_parameters(model)
+    params.update({'parameter_count': parameter_count})
+    dump_to_json(save_dir, params)
 
     for epoch in range(n_epochs):
         print(f"EPOCH {epoch}")
@@ -319,7 +325,7 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
             print(f"    loss improved from {np.round(best_loss, 6)} to {np.round(epoch_val_loss, 6)}. saving best model...")
             best_loss = epoch_val_loss
             save_best_model(model, best_model_path)
-        return training_metrics
+    return training_metrics
 
 if __name__ ==  "__main__":
     args = parse_args()

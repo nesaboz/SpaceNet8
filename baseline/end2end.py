@@ -85,12 +85,6 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-def get_eval_dirs(folder):
-    model_path = os.path.join(folder, 'best_model.pth')
-    model_name = folder.name.split('_lr')[0]
-    save_fig_dir = os.path.join(folder, 'pngs')
-    save_pred_dir = os.path.join(folder, 'tiffs')
-    return model_path, model_name, save_fig_dir, save_pred_dir
 
 def run(
         save_dir,
@@ -116,58 +110,58 @@ def run(
     training and evaluation metrics. This function is designed to be used by
     cross-validation routines.
     '''
-    # TODO: save args to file in case this function is used for hyperparameter search
     metrics = {}
     if foundation_model_name is not None:
-        foundation_dir = os.path.join(args.save_dir, 'foundation')
+        foundation_dir = os.path.join(save_dir, 'foundation')
         print('Training foundation model...')
         metrics['foundation training'] = train_foundation(
-              train_csv=args.train_csv, 
-              val_csv=args.val_csv,
+              train_csv=train_csv, 
+              val_csv=val_csv,
               save_dir=foundation_dir,
-              model_name=args.foundation_model_name,
-              initial_lr=args.foundation_lr,
-              batch_size=args.foundation_batch_size,
-              n_epochs=args.foundation_n_epochs,
-              gpu=args.gpu,
-              checkpoint_path=args.foundation_checkpoint,
+              model_name=foundation_model_name,
+              initial_lr=foundation_lr,
+              batch_size=foundation_batch_size,
+              n_epochs=foundation_n_epochs,
+              gpu=gpu,
+              checkpoint_path=foundation_checkpoint,
               foundation_model_args=foundation_model_args,
               **foundation_kwargs)
         print('Evaluating foundation model...')
         metrics['foundation eval'] = foundation_eval(
                 model_path=os.path.join(foundation_dir, 'best_model.pth'), 
-                in_csv=args.val_csv, 
+                in_csv=val_csv, 
                 save_fig_dir=os.path.join(foundation_dir, 'pngs'),
                 save_preds_dir=os.path.join(foundation_dir, 'tiffs'),
-                model_name=args.foundation_model_name)
+                model_name=foundation_model_name)
 
     if flood_model_name is not None:
-        flood_dir = os.path.join(args.save_dir, 'flood')
+        flood_dir = os.path.join(save_dir, 'flood')
         print('Training flood model...')
         metrics['flood training'] = train_flood(
-              train_csv=args.train_csv, 
-              val_csv=args.val_csv,
+              train_csv=train_csv, 
+              val_csv=val_csv,
               save_dir=flood_dir,
-              model_name=args.flood_model_name,
-              initial_lr=args.flood_lr,
-              batch_size=args.flood_batch_size,
-              n_epochs=args.flood_n_epochs,
-              gpu=args.gpu,
-              checkpoint_path=args.flood_checkpoint,
+              model_name=flood_model_name,
+              initial_lr=flood_lr,
+              batch_size=flood_batch_size,
+              n_epochs=flood_n_epochs,
+              gpu=gpu,
+              checkpoint_path=flood_checkpoint,
               flood_model_args=flood_model_args,
               **flood_kwargs)
 
         print('Evaluating flood model...')
         metrics['flood eval'] = flood_eval(
                model_path=os.path.join(flood_dir, 'best_model.pth'),
-               in_csv=args.val_csv, 
+               in_csv=val_csv, 
                save_fig_dir=os.path.join(flood_dir, 'pngs'),
                save_preds_dir=os.path.join(flood_dir, 'tiffs'),
-               model_name=args.flood_model_name)
-    # TODO: generate plots
-    with open(os.path.join(args.save_dir, 'metrics.json'), 'w') as f:
+               model_name=flood_model_name)
+    
+    with open(os.path.join(save_dir, 'metrics.json'), 'w') as f:
         json.dump({
-            key:(val.to_json_object() if hasattr(val, 'to_json_object') else val) for key, val in metrics.items()}, f)
+            key:(val.to_json_object() if hasattr(val, 'to_json_object') else val) for key, val in metrics.items()
+            }, f, indent=4)
     return metrics
 
 if __name__ == '__main__':
