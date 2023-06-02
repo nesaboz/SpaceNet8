@@ -1,3 +1,16 @@
 /data
 .DS_Store
+.idea
 **/__pycache__/
+**/.ipynb_checkpoints/
+
+# Vim tmp files
+*.sw[po]
+
+# LaTex temporary files
+*.out
+*.aux
+*.log
+*.synctex.gz
+.texpadtmp
+milestone/PaperForReview.pdf

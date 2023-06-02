@@ -13,3 +13,17 @@ def write_geotiff(output_tif, ncols, nrows,
         #outband.SetNoDataValue(0)
         outband.FlushCache()
     out_ds = None
+
+
+def freeze_model(model):
+    for parameter in model.parameters():
+        parameter.requires_grad = False
+        
+        
+def unfreeze_model(model):
+    for parameter in model.parameters():
+        parameter.requires_grad = True
+
+
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)

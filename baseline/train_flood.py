@@ -3,6 +3,8 @@ import os
 import argparse
 import datetime
 from datetime import datetime
+import time
+import psutil
 
 import torch
 import torch.nn as nn
@@ -12,8 +14,12 @@ from torchvision import transforms
 from datasets.datasets import SN8Dataset
 import models.pytorch_zoo.unet as unet
 from models.other.unet import UNetSiamese
+import models.other.segformer as segformer
 from models.other.siamunetdif import SiamUnet_diff
 from models.other.siamnestedunet import SNUNet_ECAM
+from utils.log import debug_msg, log_var_details, dump_command_line_args
+from utils.log import print_gpu_memory, print_cpu_memory
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -41,10 +47,29 @@ def parse_args():
     parser.add_argument("--gpu",
                         type=int,
                         default=0)
-    
+    parser.add_argument("--checkpoint",
+                        type=str,
+                        default=None)
     args = parser.parse_args()
     return args
 
+class FloodTrainingMetrics:
+    def __init__(self):
+        self.best_loss = 9999999999
+        self.epochs = []
+
+    # TODO: track loss over each iteration
+
+    def add_epoch(self, metrics):
+        self.epochs.append(metrics)
+        loss = metrics['val_tot_loss']
+        if loss < self.best_loss:
+            self.best_loss = loss
+
+    def to_json_object(self):
+        return {'best_loss': self.best_loss, 'epochs': self.epochs}
+
+# TODO: remove once flood training metrics persists each update
 def write_metrics_epoch(epoch, fieldnames, train_metrics, val_metrics, training_log_csv):
     epoch_dict = {"epoch":epoch}
     merged_metrics = {**epoch_dict, **train_metrics, **val_metrics}
@@ -70,25 +95,31 @@ models = {
     'seresnext101': unet.SeResnext101_32x4d_upsample,
     'unet_siamese':UNetSiamese,
     'unet_siamese_dif':SiamUnet_diff,
-    'nestedunet_siamese':SNUNet_ECAM
+    'nestedunet_siamese':SNUNet_ECAM,
+    'segformer_b0_siamese': segformer.SiameseSegformer_b0,
+    'segformer_b1_siamese': segformer.SiameseSegformer_b1,
 }
 
-if __name__ ==  "__main__":
-    args = parse_args()
-    train_csv = args.train_csv
-    val_csv = args.val_csv
-    save_dir = args.save_dir
-    model_name = args.model_name
-    initial_lr = args.lr
-    batch_size = args.batch_size
-    n_epochs = args.n_epochs
-    gpu = args.gpu
+def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size, n_epochs, gpu, checkpoint_path=None, model_args={}, **kwargs):
+    '''
+    train_csv - CSV files listing training examples
+    val_csv - CSV files listing validation examples
+    save_dir - directory to save model checkpoints, training logs, and other files.
+    model_name - type of model architecture to use
+    initial_lr - initial learning rate
+    batch_size - batch size
+    n_epochs - number of epochs to train for
+    gpu - which GPU to use
+    checkpoint_path - existing model weights to start training from
+    model_args - Extra arguments to pass to the model constructor.
+    **kwargs - extra arguments
+    '''
     
+    tic = time.time()
     now = datetime.now() 
     date_total = str(now.strftime("%d-%m-%Y-%H-%M"))
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu)
-
 
     soft_dice_loss_weight = 0.25
     focal_loss_weight = 0.75
@@ -103,12 +134,8 @@ if __name__ ==  "__main__":
     SEED=12
     torch.manual_seed(SEED)
     
-    assert(os.path.exists(save_dir))
-    save_dir = os.path.join(save_dir, f"{model_name}_lr{'{:.2e}'.format(initial_lr)}_bs{batch_size}_{date_total}")
-
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
-        os.chmod(save_dir, 0o777)
     checkpoint_model_path = os.path.join(save_dir, "model_checkpoint.pth")
     best_model_path = os.path.join(save_dir, "best_model.pth")
     training_log_csv = os.path.join(save_dir, "log.csv")
@@ -119,6 +146,7 @@ if __name__ ==  "__main__":
                                      'val_tot_loss']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
+    training_metrics = FloodTrainingMetrics()
 
     train_dataset = SN8Dataset(train_csv,
                             data_to_load=["preimg","postimg","flood"],
@@ -131,13 +159,14 @@ if __name__ ==  "__main__":
 
     #model = models["resnet34"](num_classes=5, num_channels=6)
     if model_name == "unet_siamese":
-        model = UNetSiamese(3, num_classes, bilinear=True)
+        model = UNetSiamese(3, num_classes, bilinear=True, **model_args)
     else:
-        model = models[model_name](num_classes=num_classes, num_channels=3)
+        model = models[model_name](num_classes=num_classes, num_channels=3, **model_args)
 
     model.cuda()
     optimizer = torch.optim.Adam(model.parameters(), lr=initial_lr)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=40, gamma=0.5)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
+            step_size=kwargs.get('step_size', 40), gamma=kwargs.get('gamma', 0.5))
     
     if class_weights is None:
         celoss = nn.CrossEntropyLoss()
@@ -145,6 +174,15 @@ if __name__ ==  "__main__":
         celoss = nn.CrossEntropyLoss(weight=class_weights)
 
     best_loss = np.inf
+    
+    if checkpoint_path:
+        # load checkpoint
+        print('Loaded checkpoint.')
+        model_state_dict = torch.load(checkpoint_path)
+        model.load_state_dict(model_state_dict)
+    else:
+        print('No checkpoint provided. Starting new training ...')
+
     for epoch in range(n_epochs):
         print(f"EPOCH {epoch}")
 
@@ -158,7 +196,7 @@ if __name__ ==  "__main__":
         train_building_loss = 0
         for i, data in enumerate(train_dataloader):
             optimizer.zero_grad()
-
+                
             preimg, postimg, building, road, roadspeed, flood = data
 
             preimg = preimg.cuda().float()
@@ -179,12 +217,31 @@ if __name__ ==  "__main__":
             #dice_soft_l = soft_dice_loss(y_pred, flood)
             #loss = (focal_loss_weight * focal_l + soft_dice_loss_weight * dice_soft_l)
             loss = celoss(flood_pred, flood.long())
+            
+            # if i % 10 == 0:
+            #     print_gpu_memory()
 
             train_loss_val+=loss
             #train_focal_loss += focal_l
             #train_soft_dice_loss += dice_soft_l
             loss.backward()
             optimizer.step()
+            if i == 0:
+                debug_msg('Training loop vars')
+                log_var_details('preimg', preimg)
+                log_var_details('postimg', postimg)
+                log_var_details('building', building)
+                log_var_details('road', road)
+                log_var_details('roadspeed', roadspeed)
+                log_var_details('flood', flood)
+                log_var_details('flood_pred', flood_pred)
+                # preimg, Type: <class 'torch.Tensor'>, Shape: torch.Size([2, 3, 1300, 1300]), Dtype: torch.float32
+                # postimg, Type: <class 'torch.Tensor'>, Shape: torch.Size([2, 3, 1300, 1300]), Dtype: torch.float32
+                # building, Type: <class 'torch.Tensor'>, Shape: torch.Size([2]), Dtype: torch.int64
+                # road, Type: <class 'torch.Tensor'>, Shape: torch.Size([2]), Dtype: torch.int64
+                # roadspeed, Type: <class 'torch.Tensor'>, Shape: torch.Size([2]), Dtype: torch.int64
+                # flood, Type: <class 'torch.Tensor'>, Shape: torch.Size([2, 1300, 1300]), Dtype: torch.int64
+                # flood_pred, Type: <class 'torch.Tensor'>, Shape: torch.Size([2, 5, 1300, 1300]), Dtype: torch.float32
 
             print(f"    {str(np.round(i/len(train_dataloader)*100,2))}%: TRAIN LOSS: {(train_loss_val*1.0/(i+1)).item()}", end="\r")
         print()
@@ -251,8 +308,30 @@ if __name__ ==  "__main__":
 
         save_model_checkpoint(model, checkpoint_model_path)
 
+        toc = time.time()
+        epoch_duration = toc - tic
+        print(f"Epoch took: {epoch_duration/60.0:.1f} minutes")
+
+        training_metrics.add_epoch({**train_metrics, **val_metrics, 'epoch_duration': epoch_duration})
+
         epoch_val_loss = val_metrics["val_tot_loss"]
         if epoch_val_loss < best_loss:
             print(f"    loss improved from {np.round(best_loss, 6)} to {np.round(epoch_val_loss, 6)}. saving best model...")
             best_loss = epoch_val_loss
             save_best_model(model, best_model_path)
+    return training_metrics
+
+if __name__ ==  "__main__":
+    args = parse_args()
+    train_csv = args.train_csv
+    val_csv = args.val_csv
+    save_dir = args.save_dir
+    model_name = args.model_name
+    initial_lr = args.lr
+    batch_size = args.batch_size
+    n_epochs = args.n_epochs
+    gpu = args.gpu
+    checkpoint_path = args.checkpoint
+    
+    dump_command_line_args(os.path.join(save_dir, 'args.txt'))
+    train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size, n_epochs, gpu, checkpoint_path)
