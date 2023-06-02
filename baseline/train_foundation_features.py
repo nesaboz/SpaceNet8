@@ -304,7 +304,6 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
             print(f"    loss improved from {np.round(best_loss, 6)} to {np.round(epoch_val_loss, 6)}. saving best model...")
             best_loss = epoch_val_loss
             save_model_checkpoint(model, best_model_path)
-            
     return training_metrics
 
 if __name__ == "__main__":
