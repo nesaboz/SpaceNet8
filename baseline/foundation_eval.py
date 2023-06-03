@@ -16,6 +16,7 @@ import models.pytorch_zoo.unet as unet
 from models.other.unet import UNet
 import models.other.segformer as segformer
 from datasets.datasets import SN8Dataset
+from utils.log import EvalMetrics
 from utils.utils import write_geotiff
 
 def parse_args():
@@ -129,16 +130,6 @@ models = {
     'segformer_b1': segformer.Segformer_b1
 }
 
-class EvalMetrics:
-    def __init__(self):
-        self.metrics_by_class = {}
-
-    def add_class_metrics(self, class_label, metrics):
-        self.metrics_by_class[class_label] = metrics
-
-    def to_json_object(self):
-        return self.metrics_by_class
-
 def foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu=0, create_folders=True):
     """
     We run evaluation on validation data to generate tiff images (segmentation masks) and pngs (for visualization). Note: these are geotiff images (not tiff), and to load them one must use osgeo.gdal (see `SN8Dataset.__getitem__`). 
@@ -153,6 +144,8 @@ def foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name
     img_size = (1300,1300)
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu)
+    foundation_eval_metrics = EvalMetrics()
+    foundation_eval_metrics.start()
 
     if model_name == "unet":
         model = UNet(3, [1,8], bilinear=True)
@@ -281,7 +274,6 @@ def foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name
                 #    time.sleep(2) 
                 save_figure_filename = os.path.join(save_fig_dir, os.path.basename(current_image_filename)[:-4]+"_pred.png")
                 make_prediction_png_roads_buildings(preimg, gts, predictions, save_figure_filename)
-    foundation_eval_metrics = EvalMetrics()
     
     print()
     data = ["building", "road"]
@@ -302,6 +294,7 @@ def foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name
         foundation_eval_metrics.add_class_metrics(data[i],
                 {'precision':precision, 'recall':recall, 'f1':f1, 'iou':iou})
         write_to_csv_file(datetime_str, model_name, data[i], precision, recall, f1, iou, eval_results_file)
+    foundation_eval_metrics.end()
     return foundation_eval_metrics
 
 

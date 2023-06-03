@@ -17,7 +17,7 @@ from models.other.unet import UNetSiamese
 import models.other.segformer as segformer
 from models.other.siamunetdif import SiamUnet_diff
 from models.other.siamnestedunet import SNUNet_ECAM
-from utils.log import debug_msg, log_var_details, dump_command_line_args
+from utils.log import debug_msg, log_var_details, dump_command_line_args, TrainingMetrics
 
 import inspect
 from utils.utils import count_parameters
@@ -55,22 +55,6 @@ def parse_args():
                         default=None)
     args = parser.parse_args()
     return args
-
-class FloodTrainingMetrics:
-    def __init__(self):
-        self.best_loss = 9999999999
-        self.epochs = []
-
-    # TODO: track loss over each iteration
-
-    def add_epoch(self, metrics):
-        self.epochs.append(metrics)
-        loss = metrics['val_tot_loss']
-        if loss < self.best_loss:
-            self.best_loss = loss
-
-    def to_json_object(self):
-        return {'best_loss': self.best_loss, 'epochs': self.epochs}
 
 # TODO: remove once flood training metrics persists each update
 def write_metrics_epoch(epoch, fieldnames, train_metrics, val_metrics, training_log_csv):
@@ -122,6 +106,8 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
     params = get_fcn_params(inspect.currentframe())
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu)
+    training_metrics = TrainingMetrics()
+    training_metrics.start()
 
     soft_dice_loss_weight = 0.25
     focal_loss_weight = 0.75
@@ -148,7 +134,6 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
                                      'val_tot_loss']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
-    training_metrics = FloodTrainingMetrics()
 
     train_dataset = SN8Dataset(train_csv,
                             data_to_load=["preimg","postimg","flood"],
@@ -325,6 +310,7 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
             print(f"    loss improved from {np.round(best_loss, 6)} to {np.round(epoch_val_loss, 6)}. saving best model...")
             best_loss = epoch_val_loss
             save_best_model(model, best_model_path)
+    training_metrics.end()
     return training_metrics
 
 if __name__ ==  "__main__":

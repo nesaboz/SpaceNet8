@@ -1,9 +1,62 @@
 import sys
 import psutil
+import time
 import torch
+import torch.cuda
 import inspect
 import json
 import os
+
+class ResourceMetricsMixin:
+    def __init__(self):
+        self.start_time = None
+        self.end_time = None
+        self.peak_memory = None
+
+    def start(self):
+        torch.cuda.reset_peak_memory_stats()
+        self.start_time = time.time()
+
+    def end(self):
+        self.peak_memory = torch.cuda.max_memory_allocated()
+        self.end_time = time.time()
+
+    def resource_metrics(self):
+        return {
+            'peak_memory':self.peak_memory,
+            'runtime': self.end_time - self.start_time
+        }
+
+class TrainingMetrics(ResourceMetricsMixin):
+    def __init__(self):
+        self.best_loss = float('inf')
+        self.epochs = []
+
+    # TODO: track loss over each iteration
+
+    def add_epoch(self, metrics):
+        self.epochs.append(metrics)
+        loss = metrics['val_tot_loss']
+        if loss < self.best_loss:
+            self.best_loss = loss
+
+    def to_json_object(self):
+        metrics = self.resource_metrics()
+        metrics['best_loss'] = self.best_loss
+        metrics['epochs'] = self.epochs
+        return metrics
+
+class EvalMetrics(ResourceMetricsMixin):
+    def __init__(self):
+        self.metrics_by_class = {}
+
+    def add_class_metrics(self, class_label, metrics):
+        self.metrics_by_class[class_label] = metrics
+
+    def to_json_object(self):
+        metrics = self.resource_metrics()
+        metrics['metrics_by_class'] = self.metrics_by_class
+        return metrics
 
 
 debug = False

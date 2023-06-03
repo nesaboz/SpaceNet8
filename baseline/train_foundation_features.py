@@ -5,6 +5,7 @@ from datetime import datetime
 import time
 
 import torch
+import torch.cuda
 import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
@@ -14,7 +15,7 @@ from core.losses import focal, soft_dice_loss
 import models.pytorch_zoo.unet as unet
 import models.other.segformer as segformer
 from models.other.unet import UNet
-from utils.log import debug_msg, log_var_details, dump_command_line_args
+from utils.log import debug_msg, log_var_details, dump_command_line_args, TrainingMetrics
 
 import inspect
 from utils.utils import count_parameters
@@ -53,23 +54,7 @@ def parse_args():
     args = parser.parse_args()
     return args
     
-class FoundationTrainingMetrics:
-    def __init__(self):
-        self.best_loss = 9999999999
-        self.epochs = []
-
-    # TODO: track loss over each iteration
-
-    def add_epoch(self, metrics):
-        self.epochs.append(metrics)
-        loss = metrics['val_tot_loss']
-        if loss < self.best_loss:
-            self.best_loss = loss
-
-    def to_json_object(self):
-        return {'best_loss': self.best_loss, 'epochs': self.epochs}
-
-# TODO: remove once FoundationTrainingMetrics persists each update
+# TODO: remove once TrainingMetrics persists each update
 def write_metrics_epoch(epoch, fieldnames, train_metrics, val_metrics, training_log_csv):
     epoch_dict = {"epoch":epoch}
     merged_metrics = {**epoch_dict, **train_metrics, **val_metrics}
@@ -120,6 +105,8 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
     building_loss_weight = 0.5
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu)
+    training_metrics = TrainingMetrics()
+    training_metrics.start()
 
     SEED=12
     torch.manual_seed(SEED)
@@ -136,7 +123,6 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
                                      'val_tot_loss', 'val_bce', 'val_dice', 'val_focal', 'val_road_loss']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
-    training_metrics = FoundationTrainingMetrics()
 
     train_dataset = SN8Dataset(train_csv,
                             data_to_load=["preimg","building","roadspeed"],
@@ -304,6 +290,7 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
             print(f"    loss improved from {np.round(best_loss, 6)} to {np.round(epoch_val_loss, 6)}. saving best model...")
             best_loss = epoch_val_loss
             save_model_checkpoint(model, best_model_path)
+    training_metrics.end()
     return training_metrics
 
 if __name__ == "__main__":

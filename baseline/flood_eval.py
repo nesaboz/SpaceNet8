@@ -9,16 +9,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import torch
+import torch.cuda
 import torch.nn as nn
 import psutil
 import datetime
 
-from foundation_eval import write_to_csv_file, get_eval_results_path, EvalMetrics
+from foundation_eval import write_to_csv_file, get_eval_results_path
 
 import models.pytorch_zoo.unet as unet
 from datasets.datasets import SN8Dataset
 from models.other.unet import UNetSiamese
 import models.other.segformer as segformer
+from utils.log import EvalMetrics
 from utils.utils import write_geotiff
 
 def parse_args():
@@ -175,6 +177,8 @@ def flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu
     img_size = (1300,1300)
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu)
+    flood_eval_metrics = EvalMetrics()
+    flood_eval_metrics.start()
 
     val_dataset = SN8Dataset(in_csv,
                              data_to_load=["preimg","postimg","flood"],
@@ -321,7 +325,6 @@ def flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu
     
     datetime_str = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
     
-    flood_eval_metrics = EvalMetrics()
     for j in range(len(classes)):
         print(f"class: {classes[j]}")
         precision = running_tp[j] / (running_tp[j] + running_fp[j] + 0.00001)
@@ -336,6 +339,7 @@ def flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu
                 {'precision':precision, 'recall':recall, 'f1':f1, 'iou':iou})
         
         write_to_csv_file(datetime_str, model_name, classes[j], precision, recall, f1, iou, eval_results_file)
+    flood_eval_metrics.end()
     return flood_eval_metrics
         
 
