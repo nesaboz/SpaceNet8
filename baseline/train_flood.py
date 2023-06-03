@@ -142,6 +142,7 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
                             data_to_load=["preimg","postimg","flood"],
                             img_size=img_size)
     val_dataloader = torch.utils.data.DataLoader(val_dataset, num_workers=2, batch_size=batch_size)
+    training_metrics.record_dataset_metrics(train_dataset, val_dataset)
 
     #model = models["resnet34"](num_classes=5, num_channels=6)
     if model_name == "unet_siamese":

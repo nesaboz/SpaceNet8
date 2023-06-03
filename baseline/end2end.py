@@ -110,6 +110,12 @@ def run(
     cross-validation routines.
     '''
     metrics = {}
+    def save_metrics():
+        with open(os.path.join(save_dir, 'metrics.json'), 'w') as f:
+            json.dump({
+                key:(val.to_json_object() if hasattr(val, 'to_json_object') else val) for key, val in metrics.items()
+                }, f, indent=4)
+
     if foundation_model_name is not None:
         foundation_dir = os.path.join(save_dir, 'foundation')
         print('Training foundation model...')
@@ -125,6 +131,10 @@ def run(
               checkpoint_path=foundation_checkpoint,
               foundation_model_args=foundation_model_args,
               **foundation_kwargs)
+        # Save metrics after training each of the models to see
+        # partial results without having to wait for the script to finish.
+        save_metrics()
+
         print('Evaluating foundation model...')
         metrics['foundation eval'] = foundation_eval(
                 model_path=os.path.join(foundation_dir, 'best_model.pth'), 
@@ -132,6 +142,7 @@ def run(
                 save_fig_dir=os.path.join(foundation_dir, 'pngs'),
                 save_preds_dir=os.path.join(foundation_dir, 'tiffs'),
                 model_name=foundation_model_name)
+        save_metrics()
 
     if flood_model_name is not None:
         flood_dir = os.path.join(save_dir, 'flood')
@@ -148,6 +159,7 @@ def run(
               checkpoint_path=flood_checkpoint,
               flood_model_args=flood_model_args,
               **flood_kwargs)
+        save_metrics()
 
         print('Evaluating flood model...')
         metrics['flood eval'] = flood_eval(
@@ -156,11 +168,8 @@ def run(
                save_fig_dir=os.path.join(flood_dir, 'pngs'),
                save_preds_dir=os.path.join(flood_dir, 'tiffs'),
                model_name=flood_model_name)
+        save_metrics()
     
-    with open(os.path.join(save_dir, 'metrics.json'), 'w') as f:
-        json.dump({
-            key:(val.to_json_object() if hasattr(val, 'to_json_object') else val) for key, val in metrics.items()
-            }, f, indent=4)
     return metrics
 
 if __name__ == '__main__':

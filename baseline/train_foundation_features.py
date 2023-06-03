@@ -131,6 +131,7 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
                             data_to_load=["preimg","building","roadspeed"],
                             img_size=img_size)
     val_dataloader = torch.utils.data.DataLoader(val_dataset, num_workers=4, batch_size=batch_size)
+    training_metrics.record_dataset_metrics(train_dataset, val_dataset)
 
     #model = models["resnet34"](num_classes=[1, 8], num_channels=3)
     if model_name == "unet":
