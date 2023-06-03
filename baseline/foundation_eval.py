@@ -42,8 +42,7 @@ def parse_args():
                          type=int,
                          required=False,
                          default=0)
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 def make_prediction_png_roads_buildings(image, gts, predictions, save_figure_filename):
     bldg_gt = gts[0][0]
@@ -144,8 +143,8 @@ def foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name
     img_size = (1300,1300)
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu)
-    foundation_eval_metrics = EvalMetrics()
-    foundation_eval_metrics.start()
+    eval_metrics = EvalMetrics(model_name=model_name)
+    eval_metrics.start()
 
     if model_name == "unet":
         model = UNet(3, [1,8], bilinear=True)
@@ -291,11 +290,11 @@ def foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name
         print("iou: ", iou)
         print()
 
-        foundation_eval_metrics.add_class_metrics(data[i],
+        eval_metrics.add_class_metrics(data[i],
                 {'precision':precision, 'recall':recall, 'f1':f1, 'iou':iou})
         write_to_csv_file(datetime_str, model_name, data[i], precision, recall, f1, iou, eval_results_file)
-    foundation_eval_metrics.end()
-    return foundation_eval_metrics
+    eval_metrics.end()
+    return eval_metrics
 
 
 def get_eval_results_path(save_fig_dir, save_preds_dir):

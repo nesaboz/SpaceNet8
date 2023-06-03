@@ -37,3 +37,5 @@ python $REPO_DIR/baseline/end2end.py \
 	--flood_batch_size 2 \
 	--flood_n_epochs 1 \
 	--gpu 0
+
+echo See $SAVE_DIR for results

@@ -53,8 +53,7 @@ def parse_args():
     parser.add_argument("--checkpoint",
                         type=str,
                         default=None)
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 # TODO: remove once flood training metrics persists each update
 def write_metrics_epoch(epoch, fieldnames, train_metrics, val_metrics, training_log_csv):
@@ -106,7 +105,7 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
     params = get_fcn_params(inspect.currentframe())
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu)
-    training_metrics = TrainingMetrics()
+    training_metrics = TrainingMetrics(model_name=model_name, batch_size=batch_size)
     training_metrics.start()
 
     soft_dice_loss_weight = 0.25

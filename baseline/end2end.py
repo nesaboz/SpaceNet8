@@ -82,8 +82,7 @@ def parse_args():
     parser.add_argument("--flood_checkpoint",
                         type=str,
                         default=None)
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def run(

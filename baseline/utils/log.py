@@ -27,10 +27,13 @@ class ResourceMetricsMixin:
             'runtime': self.end_time - self.start_time
         }
 
+
 class TrainingMetrics(ResourceMetricsMixin):
-    def __init__(self):
+    def __init__(self, model_name, batch_size):
         self.best_loss = float('inf')
         self.epochs = []
+        self.model_name = model_name
+        self.batch_size = batch_size
 
     # TODO: track loss over each iteration
 
@@ -44,10 +47,13 @@ class TrainingMetrics(ResourceMetricsMixin):
         metrics = self.resource_metrics()
         metrics['best_loss'] = self.best_loss
         metrics['epochs'] = self.epochs
+        metrics['model_name'] = self.model_name
+        metrics['batch_size'] = self.batch_size
         return metrics
 
 class EvalMetrics(ResourceMetricsMixin):
-    def __init__(self):
+    def __init__(self, model_name):
+        self.model_name = model_name
         self.metrics_by_class = {}
 
     def add_class_metrics(self, class_label, metrics):
@@ -56,6 +62,7 @@ class EvalMetrics(ResourceMetricsMixin):
     def to_json_object(self):
         metrics = self.resource_metrics()
         metrics['metrics_by_class'] = self.metrics_by_class
+        metrics['model_name'] = self.model_name
         return metrics
 
 

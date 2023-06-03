@@ -51,9 +51,8 @@ def parse_args():
     parser.add_argument("--checkpoint",
                         type=str,
                         default=None)
-    args = parser.parse_args()
-    return args
-    
+    return parser.parse_args()
+
 # TODO: remove once TrainingMetrics persists each update
 def write_metrics_epoch(epoch, fieldnames, train_metrics, val_metrics, training_log_csv):
     epoch_dict = {"epoch":epoch}
@@ -105,7 +104,7 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
     building_loss_weight = 0.5
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu)
-    training_metrics = TrainingMetrics()
+    training_metrics = TrainingMetrics(model_name=model_name, batch_size=batch_size)
     training_metrics.start()
 
     SEED=12
