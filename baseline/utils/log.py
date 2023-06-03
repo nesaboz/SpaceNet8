@@ -1,6 +1,9 @@
 import sys
 import psutil
 import torch
+import inspect
+import json
+import os
 
 
 debug = False
@@ -21,6 +24,18 @@ def dump_command_line_args(path):
     with open(path, 'w') as f:
         f.write(str(sys.argv))
 
+def dump_to_json(save_dir, params):
+    with open(os.path.join(save_dir, "params.json"), 'w') as f:
+        json.dump(params, f, indent=4)  # `indent` writes each new input on a new line
+        
+def load_from_json(input_path):
+    with input_path.open() as f:
+        return json.load(f)
+        
+def get_fcn_params(frame):
+    args, _, _, values = inspect.getargvalues(frame)
+    return {k: values[k] for k in args}
+    
 
 def print_gpu_memory(verbose=False):
     # Check if CUDA is available
@@ -53,6 +68,7 @@ def print_cpu_memory(verbose=True):
 
     # Extract the memory information
     total_memory = memory_info.total
+
     available_memory = memory_info.available
     used_memory = memory_info.used
     percent_memory = memory_info.percent

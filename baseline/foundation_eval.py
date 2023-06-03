@@ -140,10 +140,15 @@ class EvalMetrics:
         return self.metrics_by_class
 
 def foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu=0, create_folders=True):
+    """
+    We run evaluation on validation data to generate tiff images (segmentation masks) and pngs (for visualization). Note: these are geotiff images (not tiff), and to load them one must use osgeo.gdal (see `SN8Dataset.__getitem__`). 
+
+    - building segmentation mask (geotiff) has 1 or 0 for building
+    """
     if create_folders and save_fig_dir:
-        os.mkdir(save_fig_dir)
+        os.makedirs(save_fig_dir)
     if create_folders and save_preds_dir:
-        os.mkdir(save_preds_dir)
+        os.makedirs(save_preds_dir)
     
     img_size = (1300,1300)
 

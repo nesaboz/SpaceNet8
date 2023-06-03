@@ -161,10 +161,15 @@ models = {
 }
 
 def flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu=0, create_folders=True):
+    """
+    We run evaluation on validation data to generate tiff images (segmentation masks) and pngs (for visualization). Note: these are geotiff images (not tiff), and to load them one must use osgeo.gdal (see `SN8Dataset.__getitem__`). 
+
+    - flood segmentation mask has: 0 for background, 1 non-flooded building, 2 is flooded building, 3 is non-flooded road, 4 is flooded road
+    """
     if create_folders and save_fig_dir:
-        os.mkdir(save_fig_dir)
+        os.makedirs(save_fig_dir)
     if create_folders and save_preds_dir:
-        os.mkdir(save_preds_dir)
+        os.makedirs(save_preds_dir)
     
     num_classes = 5
     img_size = (1300,1300)
