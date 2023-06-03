@@ -188,9 +188,10 @@ def flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu
         model = UNetSiamese(3, num_classes, bilinear=True)
     else:
         model = models[model_name](num_classes=num_classes, num_channels=3)
-
+    model.eval()
     model.load_state_dict(torch.load(model_path))
     model.cuda()
+    eval_metrics.record_model_metrics(model)
 
     #criterion = nn.BCEWithLogitsLoss()
 
@@ -210,8 +211,6 @@ def flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu
     f1s = [[],[],[],[]]
     ious = [[],[],[],[]]
     positives = [[],[],[],[]]
-
-    model.eval()
     
     eval_results_file = get_eval_results_path(save_fig_dir, save_preds_dir)
     

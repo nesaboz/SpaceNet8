@@ -19,11 +19,11 @@ Directory Structure
                  still are log.csv and eval_results.csv files)
   foundation/
     best_model.pth - best foundation model
-    log.csv - log of training metrics per-epoch
+    log.csv - log of training metrics per-epoch (also contained in metrics.json)
     model_checkpoint.pth - foundation model checkpoint
     pngs/
     tiffs/
-    eval_results.csv - evaluation results
+    eval_results.csv - evaluation results (also contained in metrics.json)
   flood/
     best_model.pth
     log.csv
@@ -31,7 +31,6 @@ Directory Structure
     pngs/
     tiffs/
     eval_results.csv
-  # TODO: plot of training vs validation loss
 '''
 
 def parse_args():

@@ -150,6 +150,8 @@ def foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name
         model = UNet(3, [1,8], bilinear=True)
     else:
         model = models[model_name](num_classes=[1, 8], num_channels=3)
+    model.eval()
+    eval_metrics.record_model_metrics(model)
     val_dataset = SN8Dataset(in_csv,
                         data_to_load=["preimg","building","roadspeed"],
                         img_size=img_size)
@@ -172,7 +174,6 @@ def foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name
     ious = [[], []]
     positives = [[], []]
 
-    model.eval()
     val_loss_val = 0
 
     eval_results_file = get_eval_results_path(save_fig_dir, save_preds_dir)

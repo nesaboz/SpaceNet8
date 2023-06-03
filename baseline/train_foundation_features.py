@@ -138,6 +138,7 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
         model = UNet(3, [1,8], bilinear=True, **model_args)
     else:
         model = models[model_name](num_classes=[1, 8], num_channels=3, **model_args)
+    training_metrics.record_model_metrics(model)
     
     model.cuda()
     optimizer = torch.optim.Adam(model.parameters(), lr=initial_lr)
@@ -155,6 +156,8 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
     else:
         print('No checkpoint provided. Starting new training ...')
 
+    # TODO: Delete once all scripts and notebooks are migrated from params.json
+    # to metrics.json
     parameter_count = count_parameters(model)
     params.update({'parameter_count': parameter_count})
     dump_to_json(save_dir, params) 

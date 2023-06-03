@@ -14,7 +14,10 @@ class BaseMetrics:
         pretrained - whether the weights are fine-tuned from a pre-trained model
         '''
         self.model_name = model_name
+        # Total number or model parameters including frozen weights
         self.parameter_count = None
+        # Total number of model parameters that are not frozen
+        self.learnable_parameter_count = None
         self.pretrained = None
 
         self.start_time = None
@@ -22,8 +25,13 @@ class BaseMetrics:
         self.peak_memory = None
 
     def record_model_metrics(self, model):
-        # TODO: record parameter count and whether the model is pretrained
-        pass
+        self.parameter_count = 0
+        self.learnable_parameter_count = 0
+        for p in model.parameters():
+            self.parameter_count += p.numel()
+            if p.requires_grad:
+                self.learnable_parameter_count += p.numel()
+        # TODO: record whether the model is pretrained
 
     def start(self):
         torch.cuda.reset_peak_memory_stats()
@@ -37,6 +45,7 @@ class BaseMetrics:
         return {
             'model_name': self.model_name,
             'parameter_count': self.parameter_count,
+            'learnable_parameter_count': self.learnable_parameter_count,
             'pretrained': self.pretrained,
             'peak_memory':self.peak_memory,
             'runtime': self.end_time - self.start_time
