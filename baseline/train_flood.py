@@ -38,6 +38,9 @@ def parse_args():
     parser.add_argument("--model_name",
                          type=str,
                          required=True)
+    parser.add_argument("--from_pretrained",
+                         action='store_true',
+                         help='Initialize the model with pretrained weights')
     parser.add_argument("--lr",
                          type=float,
                         default=0.0001)
@@ -79,8 +82,11 @@ models = {
     'seresnet152': unet.SeResnet152_upsample,
     'seresnext50': unet.SeResnext50_32x4d_upsample,
     'seresnext101': unet.SeResnext101_32x4d_upsample,
+    # No pretrained weights available
     'unet_siamese':UNetSiamese,
+    # No pretrained weights available
     'unet_siamese_dif':SiamUnet_diff,
+    # No pretrained weights available
     'nestedunet_siamese':SNUNet_ECAM,
     'segformer_b0_siamese': segformer.SiameseSegformer_b0,
     'segformer_b1_siamese': segformer.SiameseSegformer_b1,
@@ -146,9 +152,11 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
 
     #model = models["resnet34"](num_classes=5, num_channels=6)
     if model_name == "unet_siamese":
+        # No pretrained weights available
         model = UNetSiamese(3, num_classes, bilinear=True, **model_args)
     else:
         model = models[model_name](num_classes=num_classes, num_channels=3, **model_args)
+    assert(hasattr(model, 'from_pretrained'))
     training_metrics.record_model_metrics(model)
 
     model.cuda()
@@ -329,4 +337,7 @@ if __name__ ==  "__main__":
     checkpoint_path = args.checkpoint
     
     dump_command_line_args(os.path.join(save_dir, 'args.txt'))
-    train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size, n_epochs, gpu, checkpoint_path)
+    train_flood(train_csv, val_csv, save_dir, model_name, initial_lr,
+        batch_size, n_epochs, gpu, checkpoint_path, model_args={
+            'from_pretrained':args.from_pretrained
+        })

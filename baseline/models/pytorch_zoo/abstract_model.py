@@ -91,9 +91,9 @@ class UnetDecoderBlock(nn.Module):
 
 
 class AbstractModel(nn.Module):
-    #def __init__(self, num_channels=3):
-    #    self.num_channels = num_channels
-    #    print ("abstract_model.py class: AbstractModel, num_channels", self.num_channels)
+    def __init__(self, from_pretrained):
+        super().__init__()
+        self.from_pretrained = from_pretrained
     
     def _initialize_weights(self):
         for m in self.modules():
@@ -108,6 +108,10 @@ class AbstractModel(nn.Module):
                 m.bias.data.zero_()
 
     def initialize_encoder(self, model, model_url):
+        if not self.from_pretrained:
+            print('Do not initialize from pretrained weights...')
+            return
+        print('Initialize from pretrained weights...')
         pretrained_dict = model_zoo.load_url(model_url)
         model_dict = model.state_dict()
         pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
@@ -119,8 +123,8 @@ def _get_layers_params(layers):
 
 
 class SiameseEncoderDecoder(AbstractModel):
-    def __init__(self, num_classes, num_channels=3, encoder_name='resnet34'):
-        super().__init__()
+    def __init__(self, num_classes, num_channels=3, encoder_name='resnet34', from_pretrained=True):
+        super().__init__(from_pretrained)
         self.filters = encoder_params[encoder_name]['filters']
         self.num_channels = num_channels        
         self.num_classes = num_classes
@@ -220,8 +224,8 @@ class SiameseEncoderDecoder(AbstractModel):
         raise NotImplementedError
 
 class EncoderDecoder(AbstractModel):
-    def __init__(self, num_classes, num_channels=3, encoder_name='resnet34'):
-        super().__init__()
+    def __init__(self, num_classes, num_channels=3, encoder_name='resnet34', from_pretrained=True):
+        super().__init__(from_pretrained)
         self.filters = encoder_params[encoder_name]['filters']
         self.num_channels = num_channels        
         self.num_classes = num_classes

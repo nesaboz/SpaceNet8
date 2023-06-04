@@ -53,6 +53,9 @@ def parse_args():
     parser.add_argument("--foundation_model_name",
                          type=str,
                          required=True)
+    parser.add_argument("--foundation_model_from_pretrained",
+                         action='store_true',
+                         help='Initialize the model with pretrained weights')
     parser.add_argument("--foundation_lr",
                          type=float,
                         default=0.0001)
@@ -69,6 +72,9 @@ def parse_args():
     parser.add_argument("--flood_model_name",
                          type=str,
                          required=True)
+    parser.add_argument("--flood_model_from_pretrained",
+                         action='store_true',
+                         help='Initialize the model with pretrained weights')
     parser.add_argument("--flood_lr",
                          type=float,
                         default=0.0001)
@@ -83,6 +89,9 @@ def parse_args():
                         default=None)
     return parser.parse_args()
 
+
+def values_to_json_obj(objs_by_key):
+    return {key:(val.to_json_object() if hasattr(val, 'to_json_object') else val) for key, val in objs_by_key.items()}
 
 def run(
         save_dir,
@@ -111,9 +120,7 @@ def run(
     metrics = {}
     def save_metrics():
         with open(os.path.join(save_dir, 'metrics.json'), 'w') as f:
-            json.dump({
-                key:(val.to_json_object() if hasattr(val, 'to_json_object') else val) for key, val in metrics.items()
-                }, f, indent=4)
+            json.dump(values_to_json_obj(metrics), f, indent=4)
 
     if foundation_model_name is not None:
         foundation_dir = os.path.join(save_dir, 'foundation')
@@ -128,7 +135,7 @@ def run(
               n_epochs=foundation_n_epochs,
               gpu=gpu,
               checkpoint_path=foundation_checkpoint,
-              foundation_model_args=foundation_model_args,
+              model_args=foundation_model_args,
               **foundation_kwargs)
         # Save metrics after training each of the models to see
         # partial results without having to wait for the script to finish.
@@ -156,7 +163,7 @@ def run(
               n_epochs=flood_n_epochs,
               gpu=gpu,
               checkpoint_path=flood_checkpoint,
-              flood_model_args=flood_model_args,
+              model_args=flood_model_args,
               **flood_kwargs)
         save_metrics()
 
@@ -184,9 +191,15 @@ if __name__ == '__main__':
         foundation_batch_size=args.foundation_batch_size,
         foundation_n_epochs=args.foundation_n_epochs,
         foundation_checkpoint=args.foundation_checkpoint,
+        foundation_model_args={
+            'from_pretrained':args.foundation_model_from_pretrained
+        },
         flood_model_name=args.flood_model_name,
         flood_lr=args.flood_lr,
         flood_batch_size=args.flood_batch_size,
         flood_n_epochs=args.flood_n_epochs,
-        flood_checkpoint=args.flood_checkpoint)
+        flood_checkpoint=args.flood_checkpoint,
+        flood_model_args={
+            'from_pretrained':args.flood_model_from_pretrained
+        })
     print('Done!')

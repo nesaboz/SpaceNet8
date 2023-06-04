@@ -93,7 +93,6 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
     model_args (dict) - Extra arguments to pass to the model constructor.
     **kwargs (dict) - extra optimizer arguments
     '''
-    
     params = get_fcn_params(inspect.currentframe())
     
     img_size = (1300,1300)
@@ -138,6 +137,7 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
         model = UNet(3, [1,8], bilinear=True, **model_args)
     else:
         model = models[model_name](num_classes=[1, 8], num_channels=3, **model_args)
+    assert(hasattr(model, 'from_pretrained'))
     training_metrics.record_model_metrics(model)
     
     model.cuda()

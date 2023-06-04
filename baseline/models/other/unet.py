@@ -116,11 +116,14 @@ class UNet(nn.Module):
             return logits1, logits2
 
 class UNetSiamese(nn.Module):
-    def __init__(self, in_channels, n_classes, bilinear=True):
+    def __init__(self, in_channels, n_classes, bilinear=True, from_pretrained=False):
         super(UNetSiamese, self).__init__()
         self.in_channels = in_channels
         self.n_classes = n_classes
         self.bilinear = bilinear
+        if from_pretrained:
+            raise ValueError('Pretrained weights not available for UNetSiamese')
+        self.from_pretrained = False
 
         self.inc = DoubleConv(in_channels, 64)
         self.down1 = Down(64, 128)

@@ -18,7 +18,7 @@ class BaseMetrics:
         self.parameter_count = None
         # Total number of model parameters that are not frozen
         self.learnable_parameter_count = None
-        self.pretrained = None
+        self.from_pretrained = None
 
         self.start_time = None
         self.end_time = None
@@ -31,7 +31,7 @@ class BaseMetrics:
             self.parameter_count += p.numel()
             if p.requires_grad:
                 self.learnable_parameter_count += p.numel()
-        # TODO: record whether the model is pretrained
+        self.from_pretrained = model.from_pretrained
 
     def start(self):
         torch.cuda.reset_peak_memory_stats()
@@ -46,7 +46,7 @@ class BaseMetrics:
             'model_name': self.model_name,
             'parameter_count': self.parameter_count,
             'learnable_parameter_count': self.learnable_parameter_count,
-            'pretrained': self.pretrained,
+            'from_pretrained': self.from_pretrained,
             'peak_memory':self.peak_memory,
             'runtime': self.end_time - self.start_time
         }

@@ -1,11 +1,10 @@
 import torch.nn as nn
-#from pytorch_zoo.abstract_model import EncoderDecoder
 from .abstract_model import EncoderDecoder, SiameseEncoderDecoder
 
 class SiameseResnet(SiameseEncoderDecoder):
-    def __init__(self, num_classes, num_channels, encoder_name):
+    def __init__(self, num_classes, num_channels, encoder_name, from_pretrained=True):
         #self.num_channels = num_channels
-        super().__init__(num_classes, num_channels, encoder_name)
+        super().__init__(num_classes, num_channels, encoder_name, from_pretrained)
         #print ("unet.py, class Resnet, self.num_channels", num_channels)
         #print ("unet.py, class Resnet, EncoderDecoder.num_channels", EncoderDecoder.num_channels)
     
@@ -30,9 +29,9 @@ class SiameseResnet(SiameseEncoderDecoder):
             return encoder.layer4
 
 class Resnet(EncoderDecoder):
-    def __init__(self, num_classes, num_channels, encoder_name):
+    def __init__(self, num_classes, num_channels, encoder_name, from_pretrained=True):
         #self.num_channels = num_channels
-        super().__init__(num_classes, num_channels, encoder_name)
+        super().__init__(num_classes, num_channels, encoder_name, from_pretrained)
         #print ("unet.py, class Resnet, self.num_channels", num_channels)
         #print ("unet.py, class Resnet, EncoderDecoder.num_channels", EncoderDecoder.num_channels)
     
@@ -57,22 +56,26 @@ class Resnet(EncoderDecoder):
             return encoder.layer4
 
 class Resnet34_siamese_upsample(SiameseResnet):
-    def __init__(self, num_classes, num_channels=3):
-        super().__init__(num_classes, num_channels, encoder_name='resnet34')
+    def __init__(self, num_classes, num_channels=3, from_pretrained=True):
+        super().__init__(num_classes, num_channels, encoder_name='resnet34',
+            from_pretrained=from_pretrained)
 
 class Resnet34_upsample(Resnet):
-    def __init__(self, num_classes, num_channels=3):
-        super().__init__(num_classes, num_channels, encoder_name='resnet34')
+    def __init__(self, num_classes, num_channels=3, from_pretrained=True):
+        super().__init__(num_classes, num_channels, encoder_name='resnet34',
+            from_pretrained=from_pretrained)
 
 
 class Resnet50_upsample(Resnet):
-    def __init__(self, num_classes, num_channels=3):
-        super().__init__(num_classes, num_channels, encoder_name='resnet50')
+    def __init__(self, num_classes, num_channels=3, from_pretrained=True):
+        super().__init__(num_classes, num_channels, encoder_name='resnet50',
+            from_pretrained=from_pretrained)
 
 
 class Resnet101_upsample(Resnet):
-    def __init__(self, num_classes, num_channels=3):
-        super().__init__(num_classes, num_channels, encoder_name='resnet101')
+    def __init__(self, num_classes, num_channels=3, from_pretrained=True):
+        super().__init__(num_classes, num_channels, encoder_name='resnet101',
+            from_pretrained=from_pretrained)
 
 
 
@@ -80,8 +83,10 @@ class Resnet101_upsample(Resnet):
 # adapted from XD_XD SN5 senet.py
 
 class Senet(EncoderDecoder):
-    def __init__(self, num_classes, num_channels, encoder_name):
-        super().__init__(num_classes, num_channels, encoder_name)
+    def __init__(self, num_classes, num_channels, encoder_name,
+            from_pretrained=True):
+        super().__init__(num_classes, num_channels, encoder_name,
+            from_pretrained=from_pretrained)
 
     def get_encoder(self, encoder, layer):
         if layer == 0:
@@ -119,25 +124,30 @@ class Senet(EncoderDecoder):
 
 
 class SeResnet50_upsample(Senet):
-    def __init__(self, num_classes, num_channels=3):
-        super().__init__(num_classes, num_channels, encoder_name='se_resnet50')
+    def __init__(self, num_classes, num_channels=3, from_pretrained=True):
+        super().__init__(num_classes, num_channels,
+            encoder_name='se_resnet50', from_pretrained=from_pretrained)
 
 
 class SeResnet101_upsample(Senet):
-    def __init__(self, num_classes, num_channels=3):
-        super().__init__(num_classes, num_channels, encoder_name='se_resnet101')
+    def __init__(self, num_classes, num_channels=3, from_pretrained=True):
+        super().__init__(num_classes, num_channels,
+            encoder_name='se_resnet101', from_pretrained=from_pretrained)
 
 
 class SeResnet152_upsample(Senet):
-    def __init__(self, num_classes, num_channels=3):
-        super().__init__(num_classes, num_channels, encoder_name='se_resnet152')
+    def __init__(self, num_classes, num_channels=3, from_pretrained=True):
+        super().__init__(num_classes, num_channels,
+            encoder_name='se_resnet152', from_pretrained=from_pretrained)
 
 
 class SeResnext50_32x4d_upsample(Senet):
-    def __init__(self, num_classes, num_channels=3):
-        super().__init__(num_classes, num_channels, encoder_name='se_resnext50_32x4d')
+    def __init__(self, num_classes, num_channels=3, from_pretrained=True):
+        super().__init__(num_classes, num_channels,
+            encoder_name='se_resnext50_32x4d', from_pretrained=from_pretrained)
 
 
 class SeResnext101_32x4d_upsample(Senet):
-    def __init__(self, num_classes, num_channels=3):
-        super().__init__(num_classes, num_channels, encoder_name='se_resnext101_32x4d')
+    def __init__(self, num_classes, num_channels=3, from_pretrained=True):
+        super().__init__(num_classes, num_channels,
+            encoder_name='se_resnext101_32x4d', from_pretrained=from_pretrained)
