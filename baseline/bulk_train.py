@@ -41,12 +41,12 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--train_csv",
                         type=str,
-                        required=True,
-                        default="/tmp/share/data/spacenet8/sn8_data_train.csv")
+                        nargs='+',
+                        required=True)
     parser.add_argument("--val_csv",
                         type=str,
-                        required=True,
-                        default="/tmp/share/data/spacenet8/sn8_data_val.csv")
+                        nargs='+',
+                        required=True)
     parser.add_argument("--save_dir",
                         type=str,
                         required=True)
@@ -57,7 +57,8 @@ def parse_args():
     parser.add_argument("--foundation_model_names",
                         type=str,
                         nargs='+',
-                        default=list(train_foundation_features.models.keys()),
+                        #default=list(train_foundation_features.models.keys()),
+                        default=[],
                         help='List of foundation models to train')
     parser.add_argument("--foundation_model_from_pretrained",
                         type=str,
@@ -81,7 +82,8 @@ def parse_args():
     parser.add_argument("--flood_model_names",
                         type=str,
                         nargs='+',
-                        default=list(train_flood.models.keys()),
+                        #default=list(train_flood.models.keys()),
+                        default=[],
                         help='List of flood models to train')
     parser.add_argument("--flood_model_from_pretrained",
                         type=str,
@@ -115,8 +117,8 @@ def create_run_configs(args):
     n_foundation = len(args.foundation_model_names)
     foundation_runs = [
         RunConfig(
-        train_csv=args.train_csv,
-        val_csv=args.val_csv,
+        train_csv=get(i, n_foundation, args.train_csv),
+        val_csv=get(i, n_foundation, args.val_csv),
         save_dir=os.path.join(args.save_dir, f'foundation-{model_name}-{i}'),
         gpu=args.gpu,
         model_name=model_name,
@@ -130,8 +132,8 @@ def create_run_configs(args):
     n_flood = len(args.flood_model_names)
     flood_runs = [
         RunConfig(
-        train_csv=args.train_csv,
-        val_csv=args.val_csv,
+        train_csv=get(i, n_foundation, args.train_csv),
+        val_csv=get(i, n_foundation, args.val_csv),
         save_dir=os.path.join(args.save_dir, f'flood-{model_name}-{i}'),
         gpu=args.gpu,
         model_name=model_name,
@@ -143,14 +145,6 @@ def create_run_configs(args):
     ]
     return foundation_runs, flood_runs
 
-def run_with_error_tolerance(f):
-    return f()
-    try:
-        return f()
-    except Exception as e:
-        print('ERROR:', e)
-        return {'error': str(e)}
-
 def train_models(save_dir, foundation_runs=[], flood_runs=[]):
     print('Training %d foundation and %d flood models...' %
         (len(foundation_runs), len(flood_runs)))
@@ -158,7 +152,7 @@ def train_models(save_dir, foundation_runs=[], flood_runs=[]):
     metrics = {}
     for r in foundation_runs:
         print('Starting', r.run_label, '...')
-        run_metrics = run_with_error_tolerance(lambda: end2end.run(
+        run_metrics = end2end.run(
             save_dir=r.save_dir,
             train_csv=r.train_csv,
             val_csv=r.val_csv,
@@ -169,14 +163,14 @@ def train_models(save_dir, foundation_runs=[], flood_runs=[]):
             foundation_n_epochs=r.n_epochs,
             foundation_model_args={
                 'from_pretrained':r.from_pretrained
-            }))
+            })
         metrics[r.run_label] = end2end.values_to_json_obj(run_metrics)
         with open(os.path.join(save_dir, 'metrics.json'), 'w') as f:
             json.dump(metrics, f, indent=4)
 
     for r in flood_runs:
         print('Starting', r.run_label, '...')
-        run_metrics = run_with_error_tolerance(lambda: end2end.run(
+        run_metrics = end2end.run(
             save_dir=r.save_dir,
             train_csv=r.train_csv,
             val_csv=r.val_csv,
@@ -187,7 +181,7 @@ def train_models(save_dir, foundation_runs=[], flood_runs=[]):
             flood_n_epochs=r.n_epochs,
             flood_model_args={
                 'from_pretrained':r.from_pretrained
-            }))
+            })
         metrics[r.run_label] = end2end.values_to_json_obj(run_metrics)
         with open(os.path.join(save_dir, 'metrics.json'), 'w') as f:
             json.dump(metrics, f, indent=4)
