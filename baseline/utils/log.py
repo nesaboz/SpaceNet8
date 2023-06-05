@@ -1,9 +1,108 @@
 import sys
 import psutil
+import time
 import torch
+import torch.cuda
 import inspect
 import json
 import os
+
+class BaseMetrics:
+    def __init__(self, model_name):
+        '''
+        model_name - name of the model architecture
+        pretrained - whether the weights are fine-tuned from a pre-trained model
+        '''
+        self.model_name = model_name
+        # Total number or model parameters including frozen weights
+        self.parameter_count = None
+        # Total number of model parameters that are not frozen
+        self.learnable_parameter_count = None
+        self.from_pretrained = None
+
+        self.start_time = None
+        self.end_time = None
+        self.peak_memory = None
+
+    def record_model_metrics(self, model):
+        self.parameter_count = 0
+        self.learnable_parameter_count = 0
+        for p in model.parameters():
+            self.parameter_count += p.numel()
+            if p.requires_grad:
+                self.learnable_parameter_count += p.numel()
+        self.from_pretrained = model.from_pretrained
+
+    def start(self):
+        torch.cuda.reset_peak_memory_stats()
+        self.start_time = time.time()
+
+    def end(self):
+        self.peak_memory = torch.cuda.max_memory_allocated()
+        self.end_time = time.time()
+
+    def base_metrics(self):
+        return {
+            'model_name': self.model_name,
+            'parameter_count': self.parameter_count,
+            'learnable_parameter_count': self.learnable_parameter_count,
+            'from_pretrained': self.from_pretrained,
+            'peak_memory':self.peak_memory,
+            'runtime': self.end_time - self.start_time
+        }
+
+class TrainingMetrics(BaseMetrics):
+    def __init__(self, model_name, batch_size):
+        '''
+        model_name - name of the model architecture
+        batch_size - batch_size used during training
+        '''
+        super().__init__(model_name)
+        self.best_loss = float('inf')
+        self.epochs = []
+        self.batch_size = batch_size
+        self.training_size = None
+        self.val_size = None
+
+    # TODO: track loss over each iteration
+
+    def record_dataset_metrics(self, training_dataset, val_dataset):
+        '''
+        training_dataset - training dataset
+        val_dataset - validation dataset
+        '''
+        self.training_size = len(training_dataset)
+        self.val_size = len(val_dataset)
+
+    def add_epoch(self, metrics):
+        self.epochs.append(metrics)
+        loss = metrics['val_tot_loss']
+        if loss < self.best_loss:
+            self.best_loss = loss
+
+    def to_json_object(self):
+        metrics = self.base_metrics()
+        return {
+            **self.base_metrics(),
+            'best_loss': self.best_loss,
+            'epochs': self.epochs,
+            'batch_size': self.batch_size,
+            'training_dataset_size': self.training_size,
+            'val_dataset_size': self.val_size,
+        }
+
+class EvalMetrics(BaseMetrics):
+    def __init__(self, model_name):
+        super().__init__(model_name)
+        self.metrics_by_class = {}
+
+    def add_class_metrics(self, class_label, metrics):
+        self.metrics_by_class[class_label] = metrics
+
+    def to_json_object(self):
+        metrics = self.base_metrics()
+        metrics['metrics_by_class'] = self.metrics_by_class
+        return metrics
 
 
 debug = False

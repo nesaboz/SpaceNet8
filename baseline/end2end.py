@@ -19,11 +19,11 @@ Directory Structure
                  still are log.csv and eval_results.csv files)
   foundation/
     best_model.pth - best foundation model
-    log.csv - log of training metrics per-epoch
+    log.csv - log of training metrics per-epoch (also contained in metrics.json)
     model_checkpoint.pth - foundation model checkpoint
     pngs/
     tiffs/
-    eval_results.csv - evaluation results
+    eval_results.csv - evaluation results (also contained in metrics.json)
   flood/
     best_model.pth
     log.csv
@@ -31,7 +31,6 @@ Directory Structure
     pngs/
     tiffs/
     eval_results.csv
-  # TODO: plot of training vs validation loss
 '''
 
 def parse_args():
@@ -54,6 +53,9 @@ def parse_args():
     parser.add_argument("--foundation_model_name",
                          type=str,
                          required=True)
+    parser.add_argument("--foundation_model_from_pretrained",
+                         action='store_true',
+                         help='Initialize the model with pretrained weights')
     parser.add_argument("--foundation_lr",
                          type=float,
                         default=0.0001)
@@ -70,6 +72,9 @@ def parse_args():
     parser.add_argument("--flood_model_name",
                          type=str,
                          required=True)
+    parser.add_argument("--flood_model_from_pretrained",
+                         action='store_true',
+                         help='Initialize the model with pretrained weights')
     parser.add_argument("--flood_lr",
                          type=float,
                         default=0.0001)
@@ -82,9 +87,11 @@ def parse_args():
     parser.add_argument("--flood_checkpoint",
                         type=str,
                         default=None)
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
+
+def values_to_json_obj(objs_by_key):
+    return {key:(val.to_json_object() if hasattr(val, 'to_json_object') else val) for key, val in objs_by_key.items()}
 
 def run(
         save_dir,
@@ -111,6 +118,10 @@ def run(
     cross-validation routines.
     '''
     metrics = {}
+    def save_metrics():
+        with open(os.path.join(save_dir, 'metrics.json'), 'w') as f:
+            json.dump(values_to_json_obj(metrics), f, indent=4)
+
     if foundation_model_name is not None:
         foundation_dir = os.path.join(save_dir, 'foundation')
         print('Training foundation model...')
@@ -124,8 +135,12 @@ def run(
               n_epochs=foundation_n_epochs,
               gpu=gpu,
               checkpoint_path=foundation_checkpoint,
-              foundation_model_args=foundation_model_args,
+              model_args=foundation_model_args,
               **foundation_kwargs)
+        # Save metrics after training each of the models to see
+        # partial results without having to wait for the script to finish.
+        save_metrics()
+
         print('Evaluating foundation model...')
         metrics['foundation eval'] = foundation_eval(
                 model_path=os.path.join(foundation_dir, 'best_model.pth'), 
@@ -133,6 +148,7 @@ def run(
                 save_fig_dir=os.path.join(foundation_dir, 'pngs'),
                 save_preds_dir=os.path.join(foundation_dir, 'tiffs'),
                 model_name=foundation_model_name)
+        save_metrics()
 
     if flood_model_name is not None:
         flood_dir = os.path.join(save_dir, 'flood')
@@ -147,8 +163,9 @@ def run(
               n_epochs=flood_n_epochs,
               gpu=gpu,
               checkpoint_path=flood_checkpoint,
-              flood_model_args=flood_model_args,
+              model_args=flood_model_args,
               **flood_kwargs)
+        save_metrics()
 
         print('Evaluating flood model...')
         metrics['flood eval'] = flood_eval(
@@ -157,11 +174,8 @@ def run(
                save_fig_dir=os.path.join(flood_dir, 'pngs'),
                save_preds_dir=os.path.join(flood_dir, 'tiffs'),
                model_name=flood_model_name)
+        save_metrics()
     
-    with open(os.path.join(save_dir, 'metrics.json'), 'w') as f:
-        json.dump({
-            key:(val.to_json_object() if hasattr(val, 'to_json_object') else val) for key, val in metrics.items()
-            }, f, indent=4)
     return metrics
 
 if __name__ == '__main__':
@@ -177,9 +191,15 @@ if __name__ == '__main__':
         foundation_batch_size=args.foundation_batch_size,
         foundation_n_epochs=args.foundation_n_epochs,
         foundation_checkpoint=args.foundation_checkpoint,
+        foundation_model_args={
+            'from_pretrained':args.foundation_model_from_pretrained
+        },
         flood_model_name=args.flood_model_name,
         flood_lr=args.flood_lr,
         flood_batch_size=args.flood_batch_size,
         flood_n_epochs=args.flood_n_epochs,
-        flood_checkpoint=args.flood_checkpoint)
+        flood_checkpoint=args.flood_checkpoint,
+        flood_model_args={
+            'from_pretrained':args.flood_model_from_pretrained
+        })
     print('Done!')

@@ -9,16 +9,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import torch
+import torch.cuda
 import torch.nn as nn
 import psutil
 import datetime
 
-from foundation_eval import write_to_csv_file, get_eval_results_path, EvalMetrics
+from foundation_eval import write_to_csv_file, get_eval_results_path
 
 import models.pytorch_zoo.unet as unet
 from datasets.datasets import SN8Dataset
 from models.other.unet import UNetSiamese
 import models.other.segformer as segformer
+from utils.log import EvalMetrics
 from utils.utils import write_geotiff
 
 def parse_args():
@@ -46,8 +48,7 @@ def parse_args():
                          type=int,
                          required=False,
                          default=0)
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def print_top_memory_variables(local_vars, var_number_to_print=5):
@@ -175,6 +176,8 @@ def flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu
     img_size = (1300,1300)
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu)
+    eval_metrics = EvalMetrics(model_name=model_name)
+    eval_metrics.start()
 
     val_dataset = SN8Dataset(in_csv,
                              data_to_load=["preimg","postimg","flood"],
@@ -185,9 +188,10 @@ def flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu
         model = UNetSiamese(3, num_classes, bilinear=True)
     else:
         model = models[model_name](num_classes=num_classes, num_channels=3)
-
+    model.eval()
     model.load_state_dict(torch.load(model_path))
     model.cuda()
+    eval_metrics.record_model_metrics(model)
 
     #criterion = nn.BCEWithLogitsLoss()
 
@@ -207,8 +211,6 @@ def flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu
     f1s = [[],[],[],[]]
     ious = [[],[],[],[]]
     positives = [[],[],[],[]]
-
-    model.eval()
     
     eval_results_file = get_eval_results_path(save_fig_dir, save_preds_dir)
     
@@ -321,7 +323,6 @@ def flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu
     
     datetime_str = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
     
-    flood_eval_metrics = EvalMetrics()
     for j in range(len(classes)):
         print(f"class: {classes[j]}")
         precision = running_tp[j] / (running_tp[j] + running_fp[j] + 0.00001)
@@ -332,11 +333,12 @@ def flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu
         print("  recall: ", recall)
         print("  f1: ", f1)
         print("  iou: ", iou)
-        flood_eval_metrics.add_class_metrics(classes[j],
+        eval_metrics.add_class_metrics(classes[j],
                 {'precision':precision, 'recall':recall, 'f1':f1, 'iou':iou})
         
         write_to_csv_file(datetime_str, model_name, classes[j], precision, recall, f1, iou, eval_results_file)
-    return flood_eval_metrics
+    eval_metrics.end()
+    return eval_metrics
         
 
 if __name__ == "__main__":
