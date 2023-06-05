@@ -1,11 +1,6 @@
-"""_summary_
+"""
 the goal is to run several models, for 3 epoch each, and then compare the time per epoch vs the number of parameters
 n_params nad time per epoch will be stored in metrics.json
-
-let's first run segformer_b0, then segformer_b1, then resnet34.
-let's just add a note to the folder name to indicate which model it is and it's purpose
-like, segformer_b0_3epoch, segformer_b1_3epoch, resnet34_3epoch
-
 """
 
 import sys
@@ -36,7 +31,8 @@ def run_experiment():
     """
     now = datetime.now() 
 
-    for model_name in ['segformer_b0', 'segformer_b1', 'resnet34']:
+    for model_name in ['segformer_b0', 'segformer_b1', 'resnet34', 'resnet50', 'seresnext50', 'unet']:
+        print(f'Runnning {model_name} ...')
         try:
             run(
                 save_dir=os.path.join(run_root, now.strftime("%d-%m-%Y-%H-%M"), '_3epochs_' + model_name),
@@ -45,41 +41,19 @@ def run_experiment():
                 foundation_model_name=model_name,
                 foundation_lr=0.0001,
                 foundation_batch_size=4,
-                foundation_n_epochs=3,
-                foundation_checkpoint=None,
-                foundation_model_args={},
-                foundation_kwargs={}
+                foundation_n_epochs=1,
+                include_eval = False
             )
         except:
             print(f'failed to run {model_name}')
-            continue
-        
-    for model_name in ['resnet50', 'seresnext50', 'unet']:
-        try:
-            run(
-                save_dir=os.path.join(run_root, model_name + '_3epochs_' + now.strftime("%Y-%m-%d-%H-%M")),
-                train_csv=train_csv,
-                val_csv=val_csv,
-                foundation_model_name=model_name,
-                foundation_lr=0.0001,
-                foundation_batch_size=4,
-                foundation_n_epochs=3,
-                foundation_checkpoint=None,
-                foundation_model_args={},
-                foundation_kwargs={}
-            )
-        except:
-            print(f'failed to run {model_name}')
-            continue
-        
+            continue    
     
 def plot_experiment():
     """
-    Get all the 3epoch folders, and look into params.json for number of parameters
-    and look into metrics.json for epoch_duration, and average it over 3 epochs
+    Get all the 3epoch folders, and look into metrics.json for epoch_duration, n_params, and model name, and average over 3 epochs
     """
-    # get all the folders with the pattern *11* in them
-    folders = list(run_root.glob('*3epochs*'))
+    # get all the folders with the pattern *3epochs* in them
+    folders = list(Path('/tmp/share/runs/spacenet8/nenad/05-06-2023-18-49').glob('*3epochs*'))
 
     n_params = []
     learnable_n_params = []
@@ -122,6 +96,6 @@ def plot_experiment():
     plot_scatter(n_params, epoch_times, model_names)
 
 if __name__ == '__main__':
-    run_experiment()
+    # run_experiment()
     plot_experiment()
         
