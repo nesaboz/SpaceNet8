@@ -64,11 +64,14 @@ class ChannelAttention(nn.Module):
         return self.sigmod(out)
 
 
-
 class SNUNet_ECAM(nn.Module):
     # SNUNet-CD with ECAM
-    def __init__(self, num_classes, num_channels):
+    def __init__(self, num_classes, num_channels, from_pretrained=False):
         super(SNUNet_ECAM, self).__init__()
+        if from_pretrained:
+            raise ValueError('Pretrained weights not available for UNetSiamese')
+        self.from_pretrained = False
+
         torch.nn.Module.dump_patches = True
         n1 = 32     # the initial number of channels of feature map
         filters = [n1, n1 * 2, n1 * 4, n1 * 8, n1 * 16]
@@ -158,8 +161,12 @@ class SNUNet_ECAM(nn.Module):
 
 class Siam_NestedUNet_Conc(nn.Module):
     # SNUNet-CD without Attention
-    def __init__(self, in_ch=3, out_ch=2):
+    def __init__(self, in_ch=3, out_ch=2, from_pretrained=False):
         super(Siam_NestedUNet_Conc, self).__init__()
+        if from_pretrained:
+            raise ValueError('Pretrained weights not available for UNetSiamese')
+        self.from_pretrained = False
+
         torch.nn.Module.dump_patches = True
         n1 = 32     # the initial number of channels of feature map
         filters = [n1, n1 * 2, n1 * 4, n1 * 8, n1 * 16]

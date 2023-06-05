@@ -10,8 +10,11 @@ from torch.nn.modules.padding import ReplicationPad2d
 class SiamUnet_diff(nn.Module):
     """SiamUnet_diff segmentation network."""
 
-    def __init__(self, num_classes, num_channels):
+    def __init__(self, num_classes, num_channels, from_pretrained=False):
         super(SiamUnet_diff, self).__init__()
+        if from_pretrained:
+            raise ValueError('Pretrained weights not available for UNetSiamese')
+        self.from_pretrained = False
 
         n1 = 16
         filters = [n1, n1 * 2, n1 * 4, n1 * 8, n1 * 16]

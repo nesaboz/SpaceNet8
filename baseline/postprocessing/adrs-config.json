@@ -1,0 +1,16 @@
+{
+	"peak_gpu_memory_plot": {
+		"model_metric_file_paths":[
+			"/tmp/share/runs/adrs/run-2023-06-03-053437/metrics.json",
+			"/tmp/share/runs/adrs/run-2023-06-03-052455/metrics.json",
+			"/tmp/share/runs/adrs/run-2023-06-03-054022/metrics.json",
+			"/tmp/share/runs/adrs/run-2023-06-03-054934/metrics.json"
+		],
+		"comments":[
+			"resnet bath size 1",
+			"resnet bath size 2",
+			"segformer b0 batch size 1",
+			"segformer b0 batch size 2"
+		]
+	}
+}
