@@ -76,6 +76,7 @@ models = {
     'unet':UNet,
     'segformer_b0': segformer.Segformer_b0,
     'segformer_b1': segformer.Segformer_b1,
+    'segformer_b2': segformer.Segformer_b2,
 }
 
 

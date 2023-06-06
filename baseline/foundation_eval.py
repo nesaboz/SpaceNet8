@@ -126,7 +126,8 @@ models = {
     'seresnext101': unet.SeResnext101_32x4d_upsample,
     'unet':UNet,
     'segformer_b0': segformer.Segformer_b0,
-    'segformer_b1': segformer.Segformer_b1
+    'segformer_b1': segformer.Segformer_b1,
+    'segformer_b2': segformer.Segformer_b2,
 }
 
 def foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu=0, create_folders=True):

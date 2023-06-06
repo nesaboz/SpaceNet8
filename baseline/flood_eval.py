@@ -159,6 +159,7 @@ models = {
     'unet_siamese': UNetSiamese,
     'segformer_b0_siamese': segformer.SiameseSegformer_b0,
     'segformer_b1_siamese': segformer.SiameseSegformer_b1,
+    'segformer_b2_siamese': segformer.SiameseSegformer_b2,
 }
 
 def flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu=0, create_folders=True):

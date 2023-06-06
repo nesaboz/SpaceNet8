@@ -90,6 +90,7 @@ models = {
     'nestedunet_siamese':SNUNet_ECAM,
     'segformer_b0_siamese': segformer.SiameseSegformer_b0,
     'segformer_b1_siamese': segformer.SiameseSegformer_b1,
+    'segformer_b2_siamese': segformer.SiameseSegformer_b2,
 }
 
 def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size, n_epochs, gpu, checkpoint_path=None, model_args={}, **kwargs):

@@ -107,6 +107,13 @@ class Segformer_b1(Segformer):
             pretrained_model_name_or_path = 'nvidia/mit-b1'
         super().__init__(num_classes, pretrained_model_name_or_path)
 
+class Segformer_b2(Segformer):
+    def __init__(self, num_classes, num_channels=3, from_pretrained=True):
+        pretrained_model_name_or_path = None
+        if from_pretrained:
+            pretrained_model_name_or_path = 'nvidia/mit-b2'
+        super().__init__(num_classes, pretrained_model_name_or_path)
+
 class SiameseSegformer_b0(SiameseSegformer):
     def __init__(self, num_classes=5, num_channels=3, from_pretrained=True):
         pretrained_model_name_or_path = None
@@ -119,6 +126,13 @@ class SiameseSegformer_b1(SiameseSegformer):
         pretrained_model_name_or_path = None
         if from_pretrained:
             pretrained_model_name_or_path = 'nvidia/mit-b1'
+        super().__init__(num_classes, pretrained_model_name_or_path)
+
+class SiameseSegformer_b2(SiameseSegformer):
+    def __init__(self, num_classes=5, num_channels=3, from_pretrained=True):
+        pretrained_model_name_or_path = None
+        if from_pretrained:
+            pretrained_model_name_or_path = 'nvidia/mit-b2'
         super().__init__(num_classes, pretrained_model_name_or_path)
 
 # Models larger than b1 do not fit in P6000 GPU memory
