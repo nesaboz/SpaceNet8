@@ -292,8 +292,11 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
                 #flood = temp
 
                 flood = torch.tensor(flood).cuda()
+                padded_combinedimg = torch.nn.functional.pad(combinedimg, (6, 6, 6, 6))
+                padded_flood_pred = model(padded_combinedimg) # this is for resnet34 with stacked preimg+postimg input
+                flood_pred = padded_flood_pred[..., 6:-6, 6:-6]
 
-                flood_pred = model(combinedimg) # this is for resnet34 with stacked preimg+postimg input
+                # flood_pred = model(combinedimg) # this is for resnet34 with stacked preimg+postimg input
                 # flood_pred = model(preimg, postimg) # this is for siamese resnet34 with stacked preimg+postimg input
 
 

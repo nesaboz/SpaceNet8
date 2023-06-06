@@ -341,8 +341,15 @@ class SiameseEncoderDecoder(AbstractModel):
 
         if self.first_layer_stride_two:
             self.last_upsample = Upsample(scale_factor=2)  # motokimura replaced UpsamplingBilinear2d with Upsample to use deterministic algorithm
-        self.final = self.make_final_classifier(
-            self.last_upsample_filters if self.first_layer_stride_two else self.decoder_filters[0], num_classes)
+        if isinstance(self.num_classes, int):
+            self.final = self.make_final_classifier(
+                self.last_upsample_filters if self.first_layer_stride_two else self.decoder_filters[0], num_classes)
+        else:
+            self.final1 = self.make_final_classifier(
+                self.last_upsample_filters if self.first_layer_stride_two else self.decoder_filters[0], num_classes[0])
+            self.final2 = self.make_final_classifier(
+                self.last_upsample_filters if self.first_layer_stride_two else self.decoder_filters[0], num_classes[1])
+            
         self._initialize_weights()
         self.dropout = Dropout2d(p=0.1)
         self.shared = shared
@@ -384,7 +391,134 @@ class SiameseEncoderDecoder(AbstractModel):
         if self.first_layer_stride_two:
             x = self.last_upsample(x)
         x = self.dropout(x)
-        f = self.final(x)
+
+        if isinstance(self.num_classes, int):
+            return self.final(x)
+        else:
+            f1 = self.final1(x)
+            f2 = self.final2(x)
+            return f1, f2
+
+
+    def get_decoder(self, layer):
+        in_channels = self.filters[layer + 1] if layer + 1 == len(self.decoder_filters) else self.decoder_filters[
+            layer + 1]
+        return self.decoder_block(in_channels, self.decoder_filters[layer], self.decoder_filters[max(layer, 0)])
+
+    def make_final_classifier(self, in_filters, num_classes):
+        return nn.Sequential(
+            nn.Conv2d(in_filters, num_classes, 1, padding=0)
+        )
+
+    def get_encoder(self, encoder, layer):
+        raise NotImplementedError
+
+    @property
+    def first_layer_params(self):
+        return _get_layers_params([self.encoder_stages[0]])
+
+    @property
+    def first_layer_params_names(self):
+        raise NotImplementedError
+
+    @property
+    def layers_except_first_params(self):
+        layers = get_slice(self.encoder_stages, 1, -1) + [self.bottlenecks, self.decoder_stages, self.final]
+        return _get_layers_params(layers)
+
+
+def _get_layers_params(layers):
+    return sum((list(l.parameters()) for l in layers), [])
+
+
+def get_slice(features, start, end):
+    if end == -1:
+        end = len(features)
+    return [features[i] for i in range(start, end)]
+
+class EncoderDecoder(AbstractModel):
+    def __init__(self, num_classes, num_channels=3, encoder_name='resnet34', from_pretrained = True):
+        if not hasattr(self, 'first_layer_stride_two'):
+            self.first_layer_stride_two = False
+        if not hasattr(self, 'decoder_block'):
+            self.decoder_block = UnetDecoderBlock
+        if not hasattr(self, 'bottleneck_type'):
+            self.bottleneck_type = ConvBottleneck
+        if not hasattr(self, 'use_bilinear_4x'):
+            self.use_bilinear_4x = False
+
+        self.filters = encoder_params[encoder_name]['filters']
+        self.decoder_filters = encoder_params[encoder_name].get('decoder_filters', self.filters[:-1])
+        self.last_upsample_filters = encoder_params[encoder_name].get('last_upsample', self.decoder_filters[0] // 2)
+
+        super().__init__()
+        self.from_pretrained = from_pretrained
+
+
+        self.num_channels = num_channels
+        self.num_classes = num_classes
+        self.bottlenecks = nn.ModuleList([self.bottleneck_type(self.filters[-i - 2] + f, f) for i, f in
+                                          enumerate(reversed(self.decoder_filters[:]))])
+
+        self.decoder_stages = nn.ModuleList([self.get_decoder(idx) for idx in range(0, len(self.decoder_filters))])
+
+        if self.first_layer_stride_two:
+            # self.last_upsample = self.decoder_block(self.decoder_filters[0], self.last_upsample_filters,
+            #                                         self.last_upsample_filters)
+            # TODO: make it configurable
+            #self.last_upsample = UpsamplingBilinear2d(scale_factor=2)
+            self.last_upsample = Upsample(scale_factor=2)  # motokimura replaced UpsamplingBilinear2d with Upsample to use deterministic algorithm
+        if self.use_bilinear_4x:
+            self.final = self.make_final_classifier(self.decoder_filters[1], num_classes)
+        else:
+            if isinstance(self.num_classes, int):
+                self.final = self.make_final_classifier(
+                    self.last_upsample_filters if self.first_layer_stride_two else self.decoder_filters[0], num_classes)
+            else:
+                self.final1 = self.make_final_classifier(
+                    self.last_upsample_filters if self.first_layer_stride_two else self.decoder_filters[0], num_classes[0])
+                self.final2 = self.make_final_classifier(
+                    self.last_upsample_filters if self.first_layer_stride_two else self.decoder_filters[0], num_classes[1])
+                
+        self._initialize_weights()
+        self.dropout = Dropout2d(p=0.25)
+        encoder = encoder_params[encoder_name]['init_op']()
+        self.encoder_stages = nn.ModuleList([self.get_encoder(encoder, idx) for idx in range(len(self.filters))])
+        if encoder_params[encoder_name]['url'] is not None:
+            self.initialize_encoder(encoder, encoder_params[encoder_name]['url'], num_channels != 3)
+
+    # noinspection PyCallingNonCallable
+    def forward(self, x):
+        # Encoder
+        enc_results = []
+        for stage in self.encoder_stages:
+            #            x = self.dropout(x)
+            x = stage(x)
+            enc_results.append(torch.cat(x, dim=1) if isinstance(x, tuple) else x.clone())
+        bottlenecks = self.bottlenecks
+        if self.use_bilinear_4x:
+            bottlenecks = bottlenecks[:-1]
+        for idx, bottleneck in enumerate(bottlenecks):
+            rev_idx = - (idx + 1)
+            x = self.decoder_stages[rev_idx](x)
+            x = bottleneck(x, enc_results[rev_idx - 1])
+        #if self.use_bilinear_4x:
+        #x = self.dropout(x)
+
+        if not self.use_bilinear_4x and self.first_layer_stride_two:
+            x = self.last_upsample(x)
+
+        
+        if isinstance(self.num_classes, int):
+            return self.final(x)
+        else:
+            f1 = self.final1(x)
+            f2 = self.final2(x)
+            return f1, f2
+
+        if self.use_bilinear_4x:
+            f = upsample_bilinear(f, scale_factor=4)
+
         return f
 
     def get_decoder(self, layer):
@@ -412,6 +546,7 @@ class SiameseEncoderDecoder(AbstractModel):
     def layers_except_first_params(self):
         layers = get_slice(self.encoder_stages, 1, -1) + [self.bottlenecks, self.decoder_stages, self.final]
         return _get_layers_params(layers)
+
 
 
 def _get_layers_params(layers):
@@ -457,6 +592,28 @@ class DensenetUnet(SiameseEncoderDecoder):
             backbone_arch += "_0"
         self.first_layer_stride_two = True
         super().__init__(seg_classes, 3, backbone_arch, shared=shared, from_pretrained = True)
+
+    def get_encoder(self, encoder, layer):
+        if layer == 0:
+            return nn.Sequential(
+                encoder.features.conv0,  # conv
+                encoder.features.norm0,  # bn
+                encoder.features.relu0  # relu
+            )
+        elif layer == 1:
+            return nn.Sequential(encoder.features.pool0, encoder.features.denseblock1)
+        elif layer == 2:
+            return nn.Sequential(encoder.features.transition1, encoder.features.denseblock2)
+        elif layer == 3:
+            return nn.Sequential(encoder.features.transition2, encoder.features.denseblock3)
+        elif layer == 4:
+            return nn.Sequential(encoder.features.transition3, encoder.features.denseblock4, encoder.features.norm5,
+                                 nn.ReLU())
+        
+class DensenetUnet_NonSiamese(EncoderDecoder):
+    def __init__(self, seg_classes, backbone_arch='dpn92', from_pretrained = True):
+        self.first_layer_stride_two = True
+        super().__init__(seg_classes, 3, backbone_arch)
 
     def get_encoder(self, encoder, layer):
         if layer == 0:
@@ -553,3 +710,7 @@ class Dense_121(DensenetUnet):
 class Dense_161(DensenetUnet):
     def __init__(self, num_classes, num_channels=3, from_pretrained = True):
         super().__init__(num_classes, backbone_arch='densenet161', from_pretrained=True)
+
+class Dense_121_f(DensenetUnet_NonSiamese):
+    def __init__(self, num_classes = [1,8], num_channels=3, from_pretrained = True):
+        super().__init__(num_classes, backbone_arch='densenet121', from_pretrained=True)
