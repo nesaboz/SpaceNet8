@@ -18,6 +18,8 @@ import models.other.segformer as segformer
 from models.other.siamunetdif import SiamUnet_diff
 from models.other.siamnestedunet import SNUNet_ECAM
 from utils.log import debug_msg, log_var_details, dump_command_line_args, TrainingMetrics
+import models.other.eff_pretrained as Densen_EffUnet
+
 
 import inspect
 from utils.utils import count_parameters
@@ -90,6 +92,10 @@ models = {
     'nestedunet_siamese':SNUNet_ECAM,
     'segformer_b0_siamese': segformer.SiameseSegformer_b0,
     'segformer_b1_siamese': segformer.SiameseSegformer_b1,
+    'effunet_b2': Densen_EffUnet.EffUnet_b2,
+    'effunet_b4': Densen_EffUnet.EffUnet_b4,
+    'dense_121': Densen_EffUnet.Dense_121,
+    'dense_161': Densen_EffUnet.Dense_161
 }
 
 def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size, n_epochs, gpu, checkpoint_path=None, model_args={}, **kwargs):
@@ -210,9 +216,13 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
             flood = np.argmax(flood, axis = 1) # this is needed for cross-entropy loss. 
 
             flood = torch.tensor(flood).cuda()
-
-            # flood_pred = model(combinedimg) # this is for resnet34 with stacked preimg+postimg input
-            flood_pred = model(preimg, postimg) # this is for siamese resnet34 with stacked preimg+postimg input
+            combinedimg = torch.cat((preimg, postimg), dim=1)
+            combinedimg = combinedimg.cuda().float()
+            padded_combinedimg = torch.nn.functional.pad(combinedimg, (6, 6, 6, 6))
+            padded_flood_pred = model(padded_combinedimg) # this is for resnet34 with stacked preimg+postimg input
+            flood_pred = padded_flood_pred[..., 6:-6, 6:-6]
+            
+            # flood_pred = model(preimg, postimg) # this is for siamese resnet34 with stacked preimg+postimg input
 
             #y_pred = F.sigmoid(flood_pred)
             #focal_l = focal(y_pred, flood)
@@ -265,8 +275,8 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
             for i, data in enumerate(val_dataloader):
                 preimg, postimg, building, road, roadspeed, flood = data
 
-                #combinedimg = torch.cat((preimg, postimg), dim=1)
-                #combinedimg = combinedimg.cuda().float()
+                combinedimg = torch.cat((preimg, postimg), dim=1)
+                combinedimg = combinedimg.cuda().float()
                 preimg = preimg.cuda().float()
                 postimg = postimg.cuda().float()
 
@@ -283,8 +293,8 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
 
                 flood = torch.tensor(flood).cuda()
 
-                # flood_pred = model(combinedimg) # this is for resnet34 with stacked preimg+postimg input
-                flood_pred = model(preimg, postimg) # this is for siamese resnet34 with stacked preimg+postimg input
+                flood_pred = model(combinedimg) # this is for resnet34 with stacked preimg+postimg input
+                # flood_pred = model(preimg, postimg) # this is for siamese resnet34 with stacked preimg+postimg input
 
 
                 #y_pred = F.sigmoid(flood_pred)
@@ -336,7 +346,7 @@ if __name__ ==  "__main__":
     gpu = args.gpu
     checkpoint_path = args.checkpoint
     
-    dump_command_line_args(os.path.join(save_dir, 'args.txt'))
+    # dump_command_line_args(os.path.join(save_dir, 'args.txt'))
     train_flood(train_csv, val_csv, save_dir, model_name, initial_lr,
         batch_size, n_epochs, gpu, checkpoint_path, model_args={
             'from_pretrained':args.from_pretrained

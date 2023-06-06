@@ -178,14 +178,28 @@ encoder_params = {
          'decoder_filters': [64, 96, 192, 256],
          'last_upsample': 64,
          'url': None,
-         'init_op': partial(densenet161, in_channels=3)},
+         'init_op': partial(densenet161, in_channels=3, pretrained = True)},
+
+    'densenet161_0':
+        {'filters': [96, 384, 768, 2112, 2208],
+         'decoder_filters': [64, 96, 192, 256],
+         'last_upsample': 64,
+         'url': None,
+         'init_op': partial(densenet161, in_channels=3, pretrained = False)},
     
     'densenet121':
         {'filters': [64, 256, 512, 1024, 1024],
          'decoder_filters': [64, 128, 256, 256],
          'last_upsample': 64,
          'url': None,
-         'init_op': partial(densenet121, in_channels=3)},
+         'init_op': partial(densenet121, in_channels=3, pretrained = True)},
+
+    'densenet121_0':
+        {'filters': [64, 256, 512, 1024, 1024],
+         'decoder_filters': [64, 128, 256, 256],
+         'last_upsample': 64,
+         'url': None,
+         'init_op': partial(densenet121, in_channels=3, pretrained = False)},
     
     'efficientnet-b2':
         {"filters": (32, 24, 48, 120, 352),
@@ -300,7 +314,8 @@ class AbstractModel(nn.Module):
 
 
 class SiameseEncoderDecoder(AbstractModel):
-    def __init__(self, num_classes, num_channels=3, encoder_name='resnet34', shared=False):
+    def __init__(self, num_classes, num_channels=3, encoder_name='resnet34', shared=False, from_pretrained = True):
+
         if not hasattr(self, 'first_layer_stride_two'):
             self.first_layer_stride_two = False
         if not hasattr(self, 'decoder_block'):
@@ -315,6 +330,7 @@ class SiameseEncoderDecoder(AbstractModel):
         self.last_upsample_filters = encoder_params[encoder_name].get('last_upsample', self.decoder_filters[0] // 2)
 
         super().__init__()
+        self.from_pretrained = from_pretrained
 
         self.num_channels = num_channels
         self.num_classes = num_classes
@@ -436,9 +452,11 @@ class UnetDecoderBlock(nn.Module):
 
 
 class DensenetUnet(SiameseEncoderDecoder):
-    def __init__(self, seg_classes, backbone_arch='densenet161', shared=True):
+    def __init__(self, seg_classes, backbone_arch='densenet161', shared=True, from_pretrained = True):
+        if not from_pretrained:
+            backbone_arch += "_0"
         self.first_layer_stride_two = True
-        super().__init__(seg_classes, 3, backbone_arch, shared=shared)
+        super().__init__(seg_classes, 3, backbone_arch, shared=shared, from_pretrained = True)
 
     def get_encoder(self, encoder, layer):
         if layer == 0:
@@ -459,10 +477,10 @@ class DensenetUnet(SiameseEncoderDecoder):
 
 
 class EfficientUnet(SiameseEncoderDecoder):
-    def __init__(self, seg_classes, backbone_arch='efficientnet-b2', shared=False):
+    def __init__(self, seg_classes, backbone_arch='efficientnet-b2', shared=False, from_pretrained = True):
         self.first_layer_stride_two = True
         self._stage_idxs = encoder_params[backbone_arch]['stage_idxs']
-        super().__init__(seg_classes, 3, backbone_arch, shared=shared)
+        super().__init__(seg_classes, 3, backbone_arch, shared=shared, from_pretrained=True)
 
     def get_encoder(self, encoder, layer):
         if layer == 0:
@@ -518,3 +536,20 @@ class EfficientUnet(SiameseEncoderDecoder):
         x = self.dropout(x)
         f = self.final(x)
         return f
+    
+
+class EffUnet_b2(EfficientUnet):
+    def __init__(self, num_classes, num_channels=3, from_pretrained = True):
+        super().__init__(num_classes, backbone_arch='efficientnet-b2', from_pretrained = True)
+
+class EffUnet_b4(EfficientUnet):
+    def __init__(self, num_classes, num_channels=3, from_pretrained = True):
+        super().__init__(num_classes, backbone_arch='efficientnet-b4', from_pretrained = True)
+
+class Dense_121(DensenetUnet):
+    def __init__(self, num_classes, num_channels=3, from_pretrained = True):
+        super().__init__(num_classes, backbone_arch='densenet121', from_pretrained=True)
+
+class Dense_161(DensenetUnet):
+    def __init__(self, num_classes, num_channels=3, from_pretrained = True):
+        super().__init__(num_classes, backbone_arch='densenet161', from_pretrained=True)
