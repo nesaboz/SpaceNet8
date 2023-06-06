@@ -5,40 +5,49 @@ from end2end import run
 import os
 
 
-# train_csv="/tmp/share/data/spacenet8/sn8_data_train.csv"
-# val_csv="/tmp/share/data/spacenet8/sn8_data_val.csv"
+train_csv="/tmp/share/data/spacenet8/sn8_data_train.csv"
+val_csv="/tmp/share/data/spacenet8/sn8_data_val.csv"
 
-train_csv="/tmp/share/data/spacenet8/adrs-small-train.csv"
-val_csv="/tmp/share/data/spacenet8/adrs-small-val.csv"
+# train_csv="/tmp/share/data/spacenet8/adrs-small-train.csv"
+# val_csv="/tmp/share/data/spacenet8/adrs-small-val.csv"
 
 run_root = Path('/tmp/share/runs/spacenet8/nenad')
 
-note = 'segformer_b1_test'
 now = datetime.now() 
-save_dir = os.path.join(run_root, note + '_' + now.strftime("%d-%m-%Y-%H-%M"))
+tag = '_segformer_b0'
+save_dir = os.path.join(run_root, now.strftime("%Y-%m-%d-%H-%M") + tag)
 
 run(
     save_dir=save_dir,
     train_csv=train_csv,
     val_csv=val_csv,
-    foundation_model_name='segformer_b1',   # resnet34
+    foundation_model_name='segformer_b0',   # resnet34
     foundation_lr=0.0001,
     foundation_batch_size=4,
-    foundation_n_epochs=2,
-    foundation_checkpoint=None,
-    foundation_model_args={},
-    foundation_kwargs={}
+    foundation_n_epochs=10,
+    flood_model_name='segformer_b0_siamese',  #  # resnet34_siamese
+    flood_lr=0.0001,
+    flood_batch_size=2,
+    flood_n_epochs=10
 )
 
-# run(
-#     save_dir=save_dir,
-#     train_csv=train_csv,
-#     val_csv=val_csv,
-#     flood_model_name='segformer_b1_siamese',  #  # resnet34_siamese
-#     flood_lr=0.0001,
-#     flood_batch_size=2,
-#     flood_n_epochs=2
-# )
+now = datetime.now() 
+tag = '_resnet34'
+save_dir = os.path.join(run_root, now.strftime("%Y-%m-%d-%H-%M") + tag)
+
+run(
+    save_dir=save_dir,
+    train_csv=train_csv,
+    val_csv=val_csv,
+    foundation_model_name='resnet34',   # resnet34
+    foundation_lr=0.0001,
+    foundation_batch_size=4,
+    foundation_n_epochs=10,
+    flood_model_name='resnet34_siamese',  #  # resnet34_siamese
+    flood_lr=0.0001,
+    flood_batch_size=2,
+    flood_n_epochs=10
+)
 
 # # extra code to run evaluation only
 

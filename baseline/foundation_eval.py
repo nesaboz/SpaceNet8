@@ -10,12 +10,15 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 import torch
 import torch.nn as nn
-import pandas as pd
+
+from train_foundation_features import models
 
 import models.pytorch_zoo.unet as unet
 from models.other.unet import UNet
 import models.other.segformer as segformer
 from datasets.datasets import SN8Dataset
+from utils.log import get_eval_results_path
+from utils.log import write_to_csv_file
 from utils.log import EvalMetrics
 from utils.utils import write_geotiff
 
@@ -115,19 +118,7 @@ def make_prediction_png_roads_buildings(image, gts, predictions, save_figure_fil
     plt.close(fig)
     plt.close('all')
 
-models = {
-    'resnet34': unet.Resnet34_upsample,
-    'resnet50': unet.Resnet50_upsample,
-    'resnet101': unet.Resnet101_upsample,
-    'seresnet50': unet.SeResnet50_upsample,
-    'seresnet101': unet.SeResnet101_upsample,
-    'seresnet152': unet.SeResnet152_upsample,
-    'seresnext50': unet.SeResnext50_32x4d_upsample,
-    'seresnext101': unet.SeResnext101_32x4d_upsample,
-    'unet':UNet,
-    'segformer_b0': segformer.Segformer_b0,
-    'segformer_b1': segformer.Segformer_b1
-}
+
 
 def foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu=0, create_folders=True):
     """
@@ -298,42 +289,6 @@ def foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name
     return eval_metrics
 
 
-def get_eval_results_path(save_fig_dir, save_preds_dir):
-    if save_preds_dir is not None:
-        run_folder =  os.path.dirname(save_preds_dir)
-    elif save_fig_dir is not None:
-        run_folder =  os.path.dirname(save_fig_dir)
-    else:
-        raise ValueError('No save_preds_dir nor save_fig_dir provided')
-    
-    eval_results_file = os.path.join(run_folder, 'eval_results.csv')
-    print(f"Saving results to {eval_results_file}")
-    
-    return eval_results_file
-
-
-def write_to_csv_file(datetime_str, model_name, class_name, precision, recall, f1, iou, csv_file):
-    new_row = pd.DataFrame([{'datetime': datetime_str,
-                             'model_name': model_name,
-                             'class': class_name, 
-                             'precision': precision, 
-                             'recall': recall, 
-                             'f1': f1, 
-                             'iou': iou}])
-
-    # Read the existing CSV file (if it exists)
-    try:
-        existing_data = pd.read_csv(csv_file)
-    except FileNotFoundError:
-        existing_data = pd.DataFrame()
-
-    # Append the new row to the existing data
-    updated_data = existing_data.append(new_row, ignore_index=True)
-
-    # Write the updated data to the CSV file
-    updated_data.to_csv(csv_file, index=False)
-
-        
 if __name__ == "__main__":
     args = parse_args()
     model_path = args.model_path

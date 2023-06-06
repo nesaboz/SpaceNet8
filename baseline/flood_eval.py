@@ -14,7 +14,9 @@ import torch.nn as nn
 import psutil
 import datetime
 
-from foundation_eval import write_to_csv_file, get_eval_results_path
+from utils.log import write_to_csv_file
+from utils.log import get_eval_results_path
+from train_flood import models
 
 import models.pytorch_zoo.unet as unet
 from datasets.datasets import SN8Dataset
@@ -50,57 +52,6 @@ def parse_args():
                          default=0)
     return parser.parse_args()
 
-
-def print_top_memory_variables(local_vars, var_number_to_print=5):
-    """Prints top variables in terms of memory. 
-    Usage: `print_top_memory_variables(locals().copy())` can't call locals() in the function itself.
-
-    Args:
-        local_vars (dict): pass `locals().copy()` 
-        var_number_to_print(int): 
-    """
-
-    # Get the local variables
-    memory = {}
-
-    # Iterate over the local variables and print their sizes
-    for var_name, var_value in local_vars.items():
-        var_size = sys.getsizeof(var_value)
-        memory[var_name] = var_size
-        
-    memory_sorted = sorted(memory.items(), key=lambda x: x[1], reverse=True)[:var_number_to_print]
-    
-    for (var_name, var_size) in memory_sorted:
-        print(f"Variable: {var_name}, Size: {var_size} bytes")
-        
-        
-
-def print_cpu_memory(verbose=False):
-
-    # Get the current memory usage
-    memory_info = psutil.virtual_memory()
-
-    # Extract the memory information
-    total_memory = memory_info.total
-    available_memory = memory_info.available
-    used_memory = memory_info.used
-    percent_memory = memory_info.percent
-
-    # Convert bytes to megabytes
-    total_memory_mb = total_memory / 1024**2
-    available_memory_mb = available_memory / 1024**2
-    used_memory_mb = used_memory / 1024**2
-
-    if verbose:
-        # Print the memory information
-        print(f"Total CPU memory: {total_memory_mb:.2f} MB")
-        print(f"Available CPU memory: {available_memory_mb:.2f} MB")
-        print(f"Used CPU memory: {used_memory_mb:.2f} MB")
-        print(f"Percentage of used CPU memory: {percent_memory}%")
-    else:
-        print(f"Percentage of used CPU memory: {percent_memory}%")
-        
-        
 
 def make_prediction_png(image, postimage, gt, prediction, save_figure_filename):
     #raw_im = image[:,:,:3]
@@ -145,21 +96,6 @@ def make_prediction_png(image, postimage, gt, prediction, save_figure_filename):
     plt.close(fig)
     plt.close('all')
                 
-    
-models = {
-    'resnet34_siamese': unet.Resnet34_siamese_upsample,
-    'resnet34': unet.Resnet34_upsample,
-    'resnet50': unet.Resnet50_upsample,
-    'resnet101': unet.Resnet101_upsample,
-    'seresnet50': unet.SeResnet50_upsample,
-    'seresnet101': unet.SeResnet101_upsample,
-    'seresnet152': unet.SeResnet152_upsample,
-    'seresnext50': unet.SeResnext50_32x4d_upsample,
-    'seresnext101': unet.SeResnext101_32x4d_upsample,
-    'unet_siamese': UNetSiamese,
-    'segformer_b0_siamese': segformer.SiameseSegformer_b0,
-    'segformer_b1_siamese': segformer.SiameseSegformer_b1,
-}
 
 def flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu=0, create_folders=True):
     """
@@ -218,13 +154,9 @@ def flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu
     with torch.no_grad():
         for i, data in enumerate(val_dataloader):
             
-            # print_top_memory_variables(locals().copy())
-            
             current_image_filename = val_dataset.get_image_filename(i)
             print("evaluating: ", i, os.path.basename(current_image_filename))
             preimg, postimg, building, road, roadspeed, flood = data
-
-            # print_cpu_memory()
             
             preimg = preimg.cuda().float() #siamese
             postimg = postimg.cuda().float() #siamese

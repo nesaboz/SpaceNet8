@@ -2,10 +2,11 @@ import argparse
 import json
 import matplotlib.pyplot as plt
 import os.path
+from utils.log import get_eval_results_path
 
 from train_foundation_features import train_foundation
 from train_flood import train_flood
-from foundation_eval import foundation_eval, get_eval_results_path
+from foundation_eval import foundation_eval
 from flood_eval import flood_eval
 from utils.log import dump_command_line_args
 
