@@ -76,6 +76,8 @@ models = {
     'unet':UNet,
     'segformer_b0': segformer.Segformer_b0,
     'segformer_b1': segformer.Segformer_b1,
+    'segformer_b0_1x1_conv': segformer.Segformer_b0_1x1_conv,
+    'segformer_b0_double_conv': segformer.Segformer_b0_double_conv,
 }
 
 
@@ -136,7 +138,7 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
     if model_name == "unet":
         model = UNet(3, [1,8], bilinear=True, **model_args)
     else:
-        model = models[model_name](num_classes=[1, 8], num_channels=3, **model_args)
+        model = models[model_name](num_classes=[1, 8], num_channels=3, **model_args)  # there is 1 class for the buiding and 8 classes for the road, hence [1, 8]
     assert(hasattr(model, 'from_pretrained'))
     training_metrics.record_model_metrics(model)
     

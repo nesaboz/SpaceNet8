@@ -1,4 +1,5 @@
 import sys
+import pandas as pd
 import psutil
 import time
 import torch
@@ -185,3 +186,62 @@ def print_cpu_memory(verbose=True):
         print(f"Percentage of used CPU memory: {percent_memory}%")
     else:
         print(f"Percentage of used CPU memory: {percent_memory}%")
+
+
+def get_eval_results_path(save_fig_dir, save_preds_dir):
+    if save_preds_dir is not None:
+        run_folder =  os.path.dirname(save_preds_dir)
+    elif save_fig_dir is not None:
+        run_folder =  os.path.dirname(save_fig_dir)
+    else:
+        raise ValueError('No save_preds_dir nor save_fig_dir provided')
+
+    eval_results_file = os.path.join(run_folder, 'eval_results.csv')
+    print(f"Saving results to {eval_results_file}")
+
+    return eval_results_file
+
+
+def write_to_csv_file(datetime_str, model_name, class_name, precision, recall, f1, iou, csv_file):
+    new_row = pd.DataFrame([{'datetime': datetime_str,
+                             'model_name': model_name,
+                             'class': class_name,
+                             'precision': precision,
+                             'recall': recall,
+                             'f1': f1,
+                             'iou': iou}])
+
+    # Read the existing CSV file (if it exists)
+    try:
+        existing_data = pd.read_csv(csv_file)
+    except FileNotFoundError:
+        existing_data = pd.DataFrame()
+
+    # Append the new row to the existing data
+    updated_data = existing_data.append(new_row, ignore_index=True)
+
+    # Write the updated data to the CSV file
+    updated_data.to_csv(csv_file, index=False)
+
+
+def print_top_memory_variables(local_vars, var_number_to_print=5):
+    """Prints top variables in terms of memory. 
+    Usage: `print_top_memory_variables(locals().copy())` can't call locals() in the function itself.
+    Args:
+        local_vars (dict): pass `locals().copy()` 
+        var_number_to_print(int): 
+    """
+
+    # Get the local variables
+    memory = {}
+
+    # Iterate over the local variables and print their sizes
+    for var_name, var_value in local_vars.items():
+        var_size = sys.getsizeof(var_value)
+        memory[var_name] = var_size
+
+    memory_sorted = sorted(memory.items(), key=lambda x: x[1], reverse=True)[:var_number_to_print]
+
+    for (var_name, var_size) in memory_sorted:
+        print(f"Variable: {var_name}, Size: {var_size} bytes")
+

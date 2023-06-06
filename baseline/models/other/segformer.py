@@ -45,7 +45,7 @@ class Upscale(nn.Module):
         return F.interpolate(x, scale_factor=self.scale_factor)
 
 class Segformer(nn.Module):
-    def __init__(self, num_classes=[1, 8], pretrained_model_name_or_path=None):
+    def __init__(self, num_classes=[1, 8], pretrained_model_name_or_path=None, final_layer='linear'):
         super().__init__()
         '''
         Constructs a Segformer model. If pretrained_model_name_or_path is
@@ -100,6 +100,27 @@ class Segformer_b0(Segformer):
             pretrained_model_name_or_path = 'nvidia/mit-b0'
         super().__init__(num_classes, pretrained_model_name_or_path)
 
+class Segformer_b0_1x1_conv(Segformer_b0):
+ 
+    def make_final_classifier(self, in_filters, num_classes):
+        return nn.Sequential(
+            nn.Conv2d(in_filters, num_classes, 1),
+            Upscale(4)
+        )
+
+class Segformer_b0_double_conv(Segformer_b0):
+
+    def make_final_classifier(self, in_filters, num_classes):
+        return nn.Sequential(
+            nn.Conv2d(in_filters, 32, 3, padding=1),
+            nn.Conv2d(32, num_classes, 3, padding=1),
+            Upscale(4)
+            )
+   
+class Segformer_b0_no_head(Segformer_b0):
+    def make_final_classifier(self, in_filters, num_classes):
+        return nn.Sequential()
+        
 class Segformer_b1(Segformer):
     def __init__(self, num_classes, num_channels=3, from_pretrained=True):
         pretrained_model_name_or_path = None

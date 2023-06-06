@@ -155,7 +155,7 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
         # No pretrained weights available
         model = UNetSiamese(3, num_classes, bilinear=True, **model_args)
     else:
-        model = models[model_name](num_classes=num_classes, num_channels=3, **model_args)
+        model = models[model_name](num_classes=num_classes, num_channels=3, **model_args)  # num classes here is 5, (0: background, 1: non-floded building, 2: flooded building, 3: non-flooded road, and 4: flooded road)
     assert(hasattr(model, 'from_pretrained'))
     training_metrics.record_model_metrics(model)
 
