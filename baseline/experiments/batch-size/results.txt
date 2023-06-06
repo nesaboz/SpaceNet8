@@ -8,7 +8,7 @@ model, max batch size
 resnet34, 8
 resnet50, 6
 resnet101, 4
-segformer_b0, 8
+segformer_b0, 7
 segformer_b1, 6
 segformer_b2, 3
 

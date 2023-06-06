@@ -33,7 +33,7 @@ class RunCache:
         self.directory_counter = self.cache.get('directory_counter', 0)
 
     def get_run_metrics(self, run_config):
-        return self.cache_path.get(run_confg.run_id())
+        return self.cache.get(run_config.run_id())
 
     def save_run_metrics(self, run_config, metrics):
         run_id = run_config.run_id()
