@@ -1,8 +1,6 @@
 import sys
 import os
-#BASELINE = os.path.join(os.path.dirname(os.path.dirname(__file__)),'baseline')
-#print(BASELINE)
-#sys.path.append(os.path.join(BASELINE))
+sys.path.append('/tmp/share/repos/adrian/Spacenet8/baseline')
 from cache_train import RunCache, RunConfig
 import matplotlib.pyplot as plt
 import numpy as np
