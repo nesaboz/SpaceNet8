@@ -111,7 +111,8 @@ def run(
         flood_n_epochs=50,
         flood_checkpoint=None,
         flood_model_args={},
-        flood_kwargs={}):
+        flood_kwargs={},
+        include_eval=True):
     '''
     Trains and evaluates a foundation features and flood network and returns
     training and evaluation metrics. This function is designed to be used by
@@ -141,14 +142,15 @@ def run(
         # partial results without having to wait for the script to finish.
         save_metrics()
 
-        print('Evaluating foundation model...')
-        metrics['foundation eval'] = foundation_eval(
-                model_path=os.path.join(foundation_dir, 'best_model.pth'), 
-                in_csv=val_csv, 
-                save_fig_dir=os.path.join(foundation_dir, 'pngs'),
-                save_preds_dir=os.path.join(foundation_dir, 'tiffs'),
-                model_name=foundation_model_name)
-        save_metrics()
+        if include_eval:
+            print('Evaluating foundation model...')
+            metrics['foundation eval'] = foundation_eval(
+                    model_path=os.path.join(foundation_dir, 'best_model.pth'), 
+                    in_csv=val_csv, 
+                    save_fig_dir=os.path.join(foundation_dir, 'pngs'),
+                    save_preds_dir=os.path.join(foundation_dir, 'tiffs'),
+                    model_name=foundation_model_name)
+            save_metrics()
 
     if flood_model_name is not None:
         flood_dir = os.path.join(save_dir, 'flood')
@@ -167,14 +169,15 @@ def run(
               **flood_kwargs)
         save_metrics()
 
-        print('Evaluating flood model...')
-        metrics['flood eval'] = flood_eval(
-               model_path=os.path.join(flood_dir, 'best_model.pth'),
-               in_csv=val_csv, 
-               save_fig_dir=os.path.join(flood_dir, 'pngs'),
-               save_preds_dir=os.path.join(flood_dir, 'tiffs'),
-               model_name=flood_model_name)
-        save_metrics()
+        if include_eval:
+            print('Evaluating flood model...')
+            metrics['flood eval'] = flood_eval(
+                model_path=os.path.join(flood_dir, 'best_model.pth'),
+                in_csv=val_csv, 
+                save_fig_dir=os.path.join(flood_dir, 'pngs'),
+                save_preds_dir=os.path.join(flood_dir, 'tiffs'),
+                model_name=flood_model_name)
+            save_metrics()
     
     return metrics
 
