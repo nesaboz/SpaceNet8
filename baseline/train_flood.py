@@ -107,7 +107,6 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
     **kwargs - extra arguments
     '''
     
-    tic = time.time()
     params = get_fcn_params(inspect.currentframe())
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu)
@@ -187,6 +186,7 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
 
     for epoch in range(n_epochs):
         print(f"EPOCH {epoch}")
+        tic = time.time()
 
         ### Training ##
         model.train()
