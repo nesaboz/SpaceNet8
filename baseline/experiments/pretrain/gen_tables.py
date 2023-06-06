@@ -67,9 +67,9 @@ def gen_tables():
     cache = cache_train.RunCache(r.SAVE_DIR)
 
     foundation_metrics = [
-       cache.get_run_metrics(run_config) for run_config in r.p1_runs]
+       cache.get_run_metrics(run_config) for run_config in r.p1_runs + r.p3_runs[:2]]
     flood_metrics = [
-       cache.get_run_metrics(run_config) for run_config in r.p2_runs]
+       cache.get_run_metrics(run_config) for run_config in r.p2_runs + r.p3_runs[2:]]
     tables = []
     for metrics in flood_metrics:
         caption = ' '.join([

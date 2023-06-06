@@ -47,6 +47,30 @@
 \end{table}
 
 \begin{table}
+    \begin{tabular}{lllll}
+         & Non-Flooded Building & Flooded Building & Non-flooded Road & Flooded Road \\
+        \hline
+        precision & 0.68 & 0.00 & 0.62 & 0.58 \\
+        recall & 0.59 & 0.00 & 0.38 & 0.03 \\
+        f1 & 0.63 & 0.00 & 0.47 & 0.05 \\
+        iou & 0.46 & 0.00 & 0.31 & 0.03 \\
+    \end{tabular}
+    \caption{Metrics for pretrained segformer\_b0\_ade\_siamese}
+\end{table}
+
+\begin{table}
+    \begin{tabular}{lllll}
+         & Non-Flooded Building & Flooded Building & Non-flooded Road & Flooded Road \\
+        \hline
+        precision & 0.78 & 0.67 & 0.71 & 0.56 \\
+        recall & 0.74 & 0.50 & 0.50 & 0.46 \\
+        f1 & 0.76 & 0.58 & 0.58 & 0.50 \\
+        iou & 0.61 & 0.40 & 0.41 & 0.34 \\
+    \end{tabular}
+    \caption{Metrics for pretrained segformer\_b0\_cityscapes\_siamese}
+\end{table}
+
+\begin{table}
     \begin{tabular}{llll}
         Model & Pre-trained & Building IoU & Road IoU \\
         \hline
@@ -54,6 +78,8 @@
         resnet34 & no & 0.36 & 0.35 \\
         segformer\_b0 & yes & 0.59 & 0.47 \\
         segformer\_b0 & no & 0.28 & 0.29 \\
+        segformer\_b0\_ade & yes & 0.54 & 0.44 \\
+        segformer\_b0\_cityscapes & yes & 0.58 & 0.47 \\
     \end{tabular}
     \caption{Metrics for Foundation Features Models}
 \end{table}
