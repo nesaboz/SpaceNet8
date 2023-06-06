@@ -7,8 +7,12 @@ SAVE_DIR="/tmp/share/runs/adrs/all-experiments"
 batch_size_by_model = {
     'resnet34': 8,
     'segformer_b0': 7,
+    'segformer_b0_ade': 7,
+    'segformer_b0_cityscapes': 7,
     'resnet34_siamese': 6,
     'segformer_b0_siamese': 4,
+    'segformer_b0_ade_siamese': 4,
+    'segformer_b0_cityscapes_siamese': 4,
     'segformer_b1': 6,
     'segformer_b1_siamese': 4,
 }
@@ -16,8 +20,12 @@ batch_size_by_model = {
 is_flood_by_model = {
     'resnet34': False,
     'segformer_b0': False,
+    'segformer_b0_ade': False,
+    'segformer_b0_cityscapes': False,
     'resnet34_siamese': True,
     'segformer_b0_siamese': True,
+    'segformer_b0_ade_siamese': True,
+    'segformer_b0_cityscapes_siamese': True,
     'segformer_b1': False,
     'segformer_b1_siamese': True,
 }
@@ -47,11 +55,20 @@ p2_runs = [
     create_config('segformer_b0_siamese', from_pretrained=False),
 ]
 
+p3_runs = [
+    create_config('segformer_b0_ade', from_pretrained=True),
+    create_config('segformer_b0_cityscapes', from_pretrained=True),
+    create_config('segformer_b0_ade_siamese', from_pretrained=True),
+    create_config('segformer_b0_cityscapes_siamese', from_pretrained=True),
+]
+
 def run():
-    print('Training p1s...')
-    cache_train.train_models(SAVE_DIR, p1_runs, gpu=0)
-    print('Training p2s...')
-    cache_train.train_models(SAVE_DIR, p2_runs, gpu=0)
+    # print('Training p1s...')
+    # cache_train.train_models(SAVE_DIR, p1_runs, gpu=0)
+    # print('Training p2s...')
+    # cache_train.train_models(SAVE_DIR, p2_runs, gpu=0)
+    print('Training p3s...')
+    cache_train.train_models(SAVE_DIR, p3_runs, gpu=0)
 
 if __name__ == '__main__':
     run()

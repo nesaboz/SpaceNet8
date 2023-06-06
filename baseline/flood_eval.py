@@ -158,6 +158,8 @@ models = {
     'seresnext101': unet.SeResnext101_32x4d_upsample,
     'unet_siamese': UNetSiamese,
     'segformer_b0_siamese': segformer.SiameseSegformer_b0,
+    'segformer_b0_ade_siamese': segformer.SiameseSegformer_b0_ade,
+    'segformer_b0_cityscapes_siamese': segformer.SiameseSegformer_b0_cityscapes,
     'segformer_b1_siamese': segformer.SiameseSegformer_b1,
     'segformer_b2_siamese': segformer.SiameseSegformer_b2,
 }
