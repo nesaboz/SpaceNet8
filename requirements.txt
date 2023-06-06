@@ -1,2 +1,3 @@
 transformers
 ipywidgets
+efficientnet_pytorch
