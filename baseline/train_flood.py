@@ -17,8 +17,11 @@ from models.other.unet import UNetSiamese
 import models.other.segformer as segformer
 from models.other.siamunetdif import SiamUnet_diff
 from models.other.siamnestedunet import SNUNet_ECAM
-from utils.log import debug_msg, log_var_details, dump_command_line_args
-from utils.log import print_gpu_memory, print_cpu_memory
+from utils.log import debug_msg, log_var_details, dump_command_line_args, TrainingMetrics
+
+import inspect
+from utils.utils import count_parameters
+from utils.log import get_fcn_params, dump_to_json
 
 
 def parse_args():
@@ -35,6 +38,9 @@ def parse_args():
     parser.add_argument("--model_name",
                          type=str,
                          required=True)
+    parser.add_argument("--from_pretrained",
+                         action='store_true',
+                         help='Initialize the model with pretrained weights')
     parser.add_argument("--lr",
                          type=float,
                         default=0.0001)
@@ -50,24 +56,7 @@ def parse_args():
     parser.add_argument("--checkpoint",
                         type=str,
                         default=None)
-    args = parser.parse_args()
-    return args
-
-class FloodTrainingMetrics:
-    def __init__(self):
-        self.best_loss = 9999999999
-        self.epochs = []
-
-    # TODO: track loss over each iteration
-
-    def add_epoch(self, metrics):
-        self.epochs.append(metrics)
-        loss = metrics['val_tot_loss']
-        if loss < self.best_loss:
-            self.best_loss = loss
-
-    def to_json_object(self):
-        return {'best_loss': self.best_loss, 'epochs': self.epochs}
+    return parser.parse_args()
 
 # TODO: remove once flood training metrics persists each update
 def write_metrics_epoch(epoch, fieldnames, train_metrics, val_metrics, training_log_csv):
@@ -93,8 +82,11 @@ models = {
     'seresnet152': unet.SeResnet152_upsample,
     'seresnext50': unet.SeResnext50_32x4d_upsample,
     'seresnext101': unet.SeResnext101_32x4d_upsample,
+    # No pretrained weights available
     'unet_siamese':UNetSiamese,
+    # No pretrained weights available
     'unet_siamese_dif':SiamUnet_diff,
+    # No pretrained weights available
     'nestedunet_siamese':SNUNet_ECAM,
     'segformer_b0_siamese': segformer.SiameseSegformer_b0,
     'segformer_b1_siamese': segformer.SiameseSegformer_b1,
@@ -116,10 +108,11 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
     '''
     
     tic = time.time()
-    now = datetime.now() 
-    date_total = str(now.strftime("%d-%m-%Y-%H-%M"))
+    params = get_fcn_params(inspect.currentframe())
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu)
+    training_metrics = TrainingMetrics(model_name=model_name, batch_size=batch_size)
+    training_metrics.start()
 
     soft_dice_loss_weight = 0.25
     focal_loss_weight = 0.75
@@ -135,7 +128,7 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
     torch.manual_seed(SEED)
     
     if not os.path.exists(save_dir):
-        os.mkdir(save_dir)
+        os.makedirs(save_dir)
     checkpoint_model_path = os.path.join(save_dir, "model_checkpoint.pth")
     best_model_path = os.path.join(save_dir, "best_model.pth")
     training_log_csv = os.path.join(save_dir, "log.csv")
@@ -146,7 +139,6 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
                                      'val_tot_loss']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
-    training_metrics = FloodTrainingMetrics()
 
     train_dataset = SN8Dataset(train_csv,
                             data_to_load=["preimg","postimg","flood"],
@@ -156,12 +148,16 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
                             data_to_load=["preimg","postimg","flood"],
                             img_size=img_size)
     val_dataloader = torch.utils.data.DataLoader(val_dataset, num_workers=2, batch_size=batch_size)
+    training_metrics.record_dataset_metrics(train_dataset, val_dataset)
 
     #model = models["resnet34"](num_classes=5, num_channels=6)
     if model_name == "unet_siamese":
+        # No pretrained weights available
         model = UNetSiamese(3, num_classes, bilinear=True, **model_args)
     else:
         model = models[model_name](num_classes=num_classes, num_channels=3, **model_args)
+    assert(hasattr(model, 'from_pretrained'))
+    training_metrics.record_model_metrics(model)
 
     model.cuda()
     optimizer = torch.optim.Adam(model.parameters(), lr=initial_lr)
@@ -182,6 +178,12 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
         model.load_state_dict(model_state_dict)
     else:
         print('No checkpoint provided. Starting new training ...')
+
+    # TODO: Delete once all scripts and notebooks are migrated from params.json
+    # to metrics.json
+    parameter_count = count_parameters(model)
+    params.update({'parameter_count': parameter_count})
+    dump_to_json(save_dir, params)
 
     for epoch in range(n_epochs):
         print(f"EPOCH {epoch}")
@@ -319,6 +321,7 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
             print(f"    loss improved from {np.round(best_loss, 6)} to {np.round(epoch_val_loss, 6)}. saving best model...")
             best_loss = epoch_val_loss
             save_best_model(model, best_model_path)
+    training_metrics.end()
     return training_metrics
 
 if __name__ ==  "__main__":
@@ -334,4 +337,7 @@ if __name__ ==  "__main__":
     checkpoint_path = args.checkpoint
     
     dump_command_line_args(os.path.join(save_dir, 'args.txt'))
-    train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size, n_epochs, gpu, checkpoint_path)
+    train_flood(train_csv, val_csv, save_dir, model_name, initial_lr,
+        batch_size, n_epochs, gpu, checkpoint_path, model_args={
+            'from_pretrained':args.from_pretrained
+        })

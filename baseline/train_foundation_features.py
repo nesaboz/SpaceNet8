@@ -5,6 +5,7 @@ from datetime import datetime
 import time
 
 import torch
+import torch.cuda
 import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
@@ -14,7 +15,12 @@ from core.losses import focal, soft_dice_loss
 import models.pytorch_zoo.unet as unet
 import models.other.segformer as segformer
 from models.other.unet import UNet
-from utils.log import debug_msg, log_var_details, dump_command_line_args
+from utils.log import debug_msg, log_var_details, dump_command_line_args, TrainingMetrics
+
+import inspect
+from utils.utils import count_parameters
+from utils.log import get_fcn_params, dump_to_json
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -45,26 +51,9 @@ def parse_args():
     parser.add_argument("--checkpoint",
                         type=str,
                         default=None)
-    args = parser.parse_args()
-    return args
-    
-class FoundationTrainingMetrics:
-    def __init__(self):
-        self.best_loss = 9999999999
-        self.epochs = []
+    return parser.parse_args()
 
-    # TODO: track loss over each iteration
-
-    def add_epoch(self, metrics):
-        self.epochs.append(metrics)
-        loss = metrics['val_tot_loss']
-        if loss < self.best_loss:
-            self.best_loss = loss
-
-    def to_json_object(self):
-        return {'best_loss': self.best_loss, 'epochs': self.epochs}
-
-# TODO: remove once FoundationTrainingMetrics persists each update
+# TODO: remove once TrainingMetrics persists each update
 def write_metrics_epoch(epoch, fieldnames, train_metrics, val_metrics, training_log_csv):
     epoch_dict = {"epoch":epoch}
     merged_metrics = {**epoch_dict, **train_metrics, **val_metrics}
@@ -92,20 +81,19 @@ models = {
 
 def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size, n_epochs, gpu, checkpoint_path=None, model_args={}, **kwargs):
     '''
-    train_csv - CSV files listing training examples
-    val_csv - CSV files listing validation examples
-    save_dir - directory to save model checkpoints, training logs, and other files.
-    model_name - type of model architecture to use
-    initial_lr - initial learning rate
-    batch_size - batch size
-    n_epochs - number of epochs to train for
-    gpu - which GPU to use
-    checkpoint_path - existing model weights to start training from
-    model_args - Extra arguments to pass to the model constructor.
-    **kwargs - extra arguments
+    train_csv (str) - CSV files listing training examples
+    val_csv (str) - CSV files listing validation examples
+    save_dir (str) - directory to save model checkpoints, training logs, and other files.
+    model_name (str) - type of model architecture to use
+    initial_lr (float)- initial learning rate
+    batch_size (int) - batch size
+    n_epochs (int) - number of epochs to train for
+    gpu (int) - which GPU to use
+    checkpoint_path (str) - existing model weights to start training from
+    model_args (dict) - Extra arguments to pass to the model constructor.
+    **kwargs (dict) - extra optimizer arguments
     '''
-    now = datetime.now() 
-    date_total = str(now.strftime("%d-%m-%Y-%H-%M"))
+    params = get_fcn_params(inspect.currentframe())
     
     img_size = (1300,1300)
     
@@ -115,12 +103,14 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
     building_loss_weight = 0.5
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu)
+    training_metrics = TrainingMetrics(model_name=model_name, batch_size=batch_size)
+    training_metrics.start()
 
     SEED=12
     torch.manual_seed(SEED)
 
     if not os.path.exists(save_dir):
-        os.mkdir(save_dir)
+        os.makedirs(save_dir)
     checkpoint_model_path = os.path.join(save_dir, "model_checkpoint.pth")
     best_model_path = os.path.join(save_dir, "best_model.pth")
     training_log_csv = os.path.join(save_dir, "log.csv")
@@ -131,7 +121,6 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
                                      'val_tot_loss', 'val_bce', 'val_dice', 'val_focal', 'val_road_loss']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
-    training_metrics = FoundationTrainingMetrics()
 
     train_dataset = SN8Dataset(train_csv,
                             data_to_load=["preimg","building","roadspeed"],
@@ -141,12 +130,15 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
                             data_to_load=["preimg","building","roadspeed"],
                             img_size=img_size)
     val_dataloader = torch.utils.data.DataLoader(val_dataset, num_workers=4, batch_size=batch_size)
+    training_metrics.record_dataset_metrics(train_dataset, val_dataset)
 
     #model = models["resnet34"](num_classes=[1, 8], num_channels=3)
     if model_name == "unet":
         model = UNet(3, [1,8], bilinear=True, **model_args)
     else:
         model = models[model_name](num_classes=[1, 8], num_channels=3, **model_args)
+    assert(hasattr(model, 'from_pretrained'))
+    training_metrics.record_model_metrics(model)
     
     model.cuda()
     optimizer = torch.optim.Adam(model.parameters(), lr=initial_lr)
@@ -164,6 +156,12 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
     else:
         print('No checkpoint provided. Starting new training ...')
 
+    # TODO: Delete once all scripts and notebooks are migrated from params.json
+    # to metrics.json
+    parameter_count = count_parameters(model)
+    params.update({'parameter_count': parameter_count})
+    dump_to_json(save_dir, params) 
+    
     for epoch in range(n_epochs):
         print(f"EPOCH {epoch}")
         tic = time.time()
@@ -295,6 +293,7 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
             print(f"    loss improved from {np.round(best_loss, 6)} to {np.round(epoch_val_loss, 6)}. saving best model...")
             best_loss = epoch_val_loss
             save_model_checkpoint(model, best_model_path)
+    training_metrics.end()
     return training_metrics
 
 if __name__ == "__main__":
