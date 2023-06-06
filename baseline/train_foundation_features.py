@@ -14,6 +14,8 @@ from datasets.datasets import SN8Dataset
 from core.losses import focal, soft_dice_loss
 import models.pytorch_zoo.unet as unet
 import models.other.segformer as segformer
+import models.other.eff_pretrained as Densen_EffUnet
+
 from models.other.unet import UNet
 from utils.log import debug_msg, log_var_details, dump_command_line_args, TrainingMetrics
 
@@ -76,8 +78,10 @@ models = {
     'unet':UNet,
     'segformer_b0': segformer.Segformer_b0,
     'segformer_b1': segformer.Segformer_b1,
-    'segformer_b0_1x1_conv': segformer.Segformer_b0_1x1_conv,
-    'segformer_b0_double_conv': segformer.Segformer_b0_double_conv,
+    'effunet_b2': Densen_EffUnet.EffUnet_b2,
+    'effunet_b4': Densen_EffUnet.EffUnet_b4,
+    'dense_121': Densen_EffUnet.Dense_121_f,
+    'dense_161': Densen_EffUnet.Dense_161
 }
 
 
@@ -185,7 +189,12 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
             roadspeed = roadspeed.cuda().float()
             building = building.cuda().float()
 
-            building_pred, road_pred = model(preimg)
+            padded_preimg = torch.nn.functional.pad(preimg, (6, 6, 6, 6))
+            padded_building_pred, padded_road_pred = model(padded_preimg)
+            building_pred = padded_building_pred[..., 6:-6, 6:-6]
+            road_pred = padded_road_pred[..., 6:-6, 6:-6]
+
+
             bce_l = bceloss(building_pred, building)
             y_pred = F.sigmoid(road_pred)
 
@@ -253,7 +262,12 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
                 roadspeed = roadspeed.cuda().float()
                 building = building.cuda().float()
 
-                building_pred, road_pred = model(preimg)
+                padded_preimg = torch.nn.functional.pad(preimg, (6, 6, 6, 6))
+                padded_building_pred, padded_road_pred = model(padded_preimg)
+                building_pred = padded_building_pred[..., 6:-6, 6:-6]
+                road_pred = padded_road_pred[..., 6:-6, 6:-6]
+
+                # building_pred, road_pred = model(preimg)
                 bce_l = bceloss(building_pred, building)
                 y_pred = F.sigmoid(road_pred)
 
@@ -310,5 +324,5 @@ if __name__ == "__main__":
     gpu = args.gpu
     checkpoint_path = args.checkpoint
 
-    dump_command_line_args(os.path.join(save_dir, 'args.txt'))
+    # dump_command_line_args(os.path.join(save_dir, 'args.txt'))
     train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size, n_epochs, gpu, checkpoint_path)
