@@ -31,7 +31,7 @@ def run_experiment():
     now = datetime.now() 
     folder = os.path.join(run_root, now.strftime("%Y-%m-%d-%H-%M"))
 
-    for model_name in ['segformer_b0', 'segformer_b1', 'resnet34', 'resnet50', 'seresnext50', 'unet']:
+    for model_name in ['dummy', 'segformer_b0', 'segformer_b1', 'resnet34', 'resnet50', 'seresnext50', 'unet']:
         print(f'Runnning {model_name} ...')
         try:
             run(
@@ -54,7 +54,7 @@ def plot_experiment(folder):
     Get all the `epochs_time_vs_params` folders, and look into metrics.json for epoch_duration, n_params, and model name
     """
     # get all the folders with the pattern *epochs_time_vs_params* in them
-    folders = list(Path(folder).glob('*epochs_time_vs_params*'))
+    folders = list(Path(folder).glob('*3epochs*'))
 
     n_params = []
     learnable_n_params = []
@@ -92,13 +92,13 @@ def plot_experiment(folder):
         plt.title('Epoch duration vs number of learnable parameters')
         plt.grid(True)
         now = datetime.now() 
-        
+        plt.axis([0, 1.1*max(x), 0, 1.1*max(y)])
         plt.savefig(os.path.join(BASELINE, f'results/{now.strftime("%Y-%m-%d-%H-%M")}_epoch_time_vs_params.png'))
         plt.show()
 
     plot_scatter(n_params, epoch_times, model_names)
 
 if __name__ == '__main__':
-    folder = run_experiment()
-    plot_experiment(folder)  # latest run: '/tmp/share/runs/spacenet8/nenad/05-06-2023-18-49'
+    # folder = run_experiment()
+    plot_experiment('/tmp/share/runs/spacenet8/nenad/2023-06-05-18-49_epoch_time_vs_param')  # latest run: '/tmp/share/runs/spacenet8/nenad/2023-06-05-18-49_epoch_time_vs_param'
         

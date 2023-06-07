@@ -78,6 +78,7 @@ models = {
     'segformer_b1': segformer.Segformer_b1,
     'segformer_b0_1x1_conv': segformer.Segformer_b0_1x1_conv,
     'segformer_b0_double_conv': segformer.Segformer_b0_double_conv,
+    'dummy': segformer.DummyModule
 }
 
 

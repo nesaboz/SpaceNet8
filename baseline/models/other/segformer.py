@@ -4,6 +4,17 @@ import torch.nn.functional as F
 from transformers import SegformerForSemanticSegmentation, SegformerConfig
 from .unet import OutConv, Up
 
+class DummyModule(nn.Module):
+    def __init__(self, num_classes=[1,8], num_channels=3, from_pretrained=False):
+        super().__init__()
+        self.from_pretrained = from_pretrained
+        self.num_classes = num_classes
+        self.conv1 = nn.Conv2d(num_channels, self.num_classes[0], kernel_size=1)
+        self.conv2 = nn.Conv2d(num_channels, self.num_classes[1], kernel_size=1)
+        
+    def forward(self, x):
+        return self.conv1(x), self.conv2(x)
+    
 class SiameseSegformer(nn.Module):
     def __init__(self, num_classes=5, pretrained_model_name_or_path=None):
         '''
