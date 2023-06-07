@@ -78,8 +78,8 @@ models = {
     'unet':UNet,
     'segformer_b0': segformer.Segformer_b0,
     'segformer_b1': segformer.Segformer_b1,
-    'effunet_b2': Densen_EffUnet.EffUnet_b2,
-    'effunet_b4': Densen_EffUnet.EffUnet_b4,
+    'effunet_b2': Densen_EffUnet.EffUnet_b2_f,
+    'effunet_b4': Densen_EffUnet.EffUnet_b4_f,
     'dense_121': Densen_EffUnet.Dense_121_f,
     'dense_161': Densen_EffUnet.Dense_161
 }
