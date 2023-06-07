@@ -180,7 +180,14 @@ def foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name
             
             roadspeed = roadspeed.cuda().float()
             building = building.cuda().float()
-            building_pred, roadspeed_pred = model(preimg)
+
+
+            # building_pred, roadspeed_pred = model(preimg)
+
+            padded_preimg = torch.nn.functional.pad(preimg, (6, 6, 6, 6))
+            padded_building_pred, padded_road_pred = model(padded_preimg)
+            building_pred = padded_building_pred[..., 6:-6, 6:-6]
+            roadspeed_pred = padded_road_pred[..., 6:-6, 6:-6]
             
             roadspeed_pred = torch.sigmoid(roadspeed_pred)
             building_pred = torch.sigmoid(building_pred)

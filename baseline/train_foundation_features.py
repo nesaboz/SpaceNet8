@@ -81,7 +81,7 @@ models = {
     'effunet_b2': Densen_EffUnet.EffUnet_b2,
     'effunet_b4': Densen_EffUnet.EffUnet_b4,
     'dense_121': Densen_EffUnet.Dense_121_f,
-    'dense_161': Densen_EffUnet.Dense_161
+    'dense_161': Densen_EffUnet.Dense_161_f
 }
 
 
