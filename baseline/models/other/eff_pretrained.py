@@ -516,11 +516,6 @@ class EncoderDecoder(AbstractModel):
             f2 = self.final2(x)
             return f1, f2
 
-        if self.use_bilinear_4x:
-            f = upsample_bilinear(f, scale_factor=4)
-
-        return f
-
     def get_decoder(self, layer):
         in_channels = self.filters[layer + 1] if layer + 1 == len(self.decoder_filters) else self.decoder_filters[
             layer + 1]
@@ -632,12 +627,52 @@ class DensenetUnet_NonSiamese(EncoderDecoder):
             return nn.Sequential(encoder.features.transition3, encoder.features.denseblock4, encoder.features.norm5,
                                  nn.ReLU())
 
+    def forward(self, x):
+        # Encoder
+        enc_results = []
+        for stage in self.encoder_stages:
+            #            x = self.dropout(x)
+            x = stage(x)
+            enc_results.append(torch.cat(x, dim=1) if isinstance(x, tuple) else x.clone())
+        bottlenecks = self.bottlenecks
+        if self.use_bilinear_4x:
+            bottlenecks = bottlenecks[:-1]
+        for idx, bottleneck in enumerate(bottlenecks):
+            rev_idx = - (idx + 1)
+            x = self.decoder_stages[rev_idx](x)
+            x = bottleneck(x, enc_results[rev_idx - 1])
+        #if self.use_bilinear_4x:
+        #x = self.dropout(x)
+
+        if not self.use_bilinear_4x and self.first_layer_stride_two:
+            x = self.last_upsample(x)
+
+        
+        if isinstance(self.num_classes, int):
+            return self.final(x)
+        else:
+            f1 = self.final1(x)
+            f2 = self.final2(x)
+            return f1, f2
+        
+    def get_decoder(self, layer):
+        in_channels = self.filters[layer + 1] if layer + 1 == len(self.decoder_filters) else self.decoder_filters[
+            layer + 1]
+        return self.decoder_block(in_channels, self.decoder_filters[layer], self.decoder_filters[max(layer, 0)])
+
+    def make_final_classifier(self, in_filters, num_classes):
+        return nn.Sequential(
+            nn.Conv2d(in_filters, num_classes, 1, padding=0)
+        )
+
+
 
 class EfficientUnet(SiameseEncoderDecoder):
-    def __init__(self, seg_classes, backbone_arch='efficientnet-b2', shared=False, from_pretrained = True):
+    def __init__(self, seg_classes, backbone_arch='efficientnet-b2', from_pretrained = True):
+        
         self.first_layer_stride_two = True
         self._stage_idxs = encoder_params[backbone_arch]['stage_idxs']
-        super().__init__(seg_classes, 3, backbone_arch, shared=shared, from_pretrained=True)
+        super().__init__(seg_classes, 3, backbone_arch, from_pretrained=True)
 
     def get_encoder(self, encoder, layer):
         if layer == 0:
@@ -694,6 +729,58 @@ class EfficientUnet(SiameseEncoderDecoder):
         f = self.final(x)
         return f
     
+class EfficientUnet_NonSiamese(EncoderDecoder):
+    def __init__(self, seg_classes, backbone_arch='efficientnet-b2', shared=False, from_pretrained = True):
+        self.first_layer_stride_two = True
+        self._stage_idxs = encoder_params[backbone_arch]['stage_idxs']
+        super().__init__(seg_classes, 3, backbone_arch, from_pretrained=True)
+
+    def get_encoder(self, encoder, layer):
+        if layer == 0:
+            return nn.Sequential(encoder._conv_stem, encoder._bn0, encoder._swish)
+        elif layer == 1:
+            return Sequential(*encoder._blocks[:self._stage_idxs[0]])
+        elif layer == 2:
+            return Sequential(*encoder._blocks[self._stage_idxs[0]:self._stage_idxs[1]])
+        elif layer == 3:
+            return Sequential(*encoder._blocks[self._stage_idxs[1]:self._stage_idxs[2]])
+        elif layer == 4:
+            return Sequential(*encoder._blocks[self._stage_idxs[2]:])
+
+    def forward(self, x):
+        # Encoder
+        enc_results = []
+        for stage in self.encoder_stages:
+            #            x = self.dropout(x)
+            x = stage(x)
+            enc_results.append(torch.cat(x, dim=1) if isinstance(x, tuple) else x.clone())
+        bottlenecks = self.bottlenecks
+        if self.use_bilinear_4x:
+            bottlenecks = bottlenecks[:-1]
+        for idx, bottleneck in enumerate(bottlenecks):
+            rev_idx = - (idx + 1)
+            x = self.decoder_stages[rev_idx](x)
+            x = bottleneck(x, enc_results[rev_idx - 1])
+        #if self.use_bilinear_4x:
+        #x = self.dropout(x)
+
+        if not self.use_bilinear_4x and self.first_layer_stride_two:
+            x = self.last_upsample(x)
+
+        
+        if isinstance(self.num_classes, int):
+            return self.final(x)
+        else:
+            f1 = self.final1(x)
+            f2 = self.final2(x)
+            return f1, f2
+
+    
+    
+
+
+    
+       
 
 class EffUnet_b2(EfficientUnet):
     def __init__(self, num_classes, num_channels=3, from_pretrained = True):
@@ -714,3 +801,12 @@ class Dense_161(DensenetUnet):
 class Dense_121_f(DensenetUnet_NonSiamese):
     def __init__(self, num_classes = [1,8], num_channels=3, from_pretrained = True):
         super().__init__(num_classes, backbone_arch='densenet121', from_pretrained=True)
+
+class EffUnet_b2_f(EfficientUnet_NonSiamese):
+     def __init__(self, num_classes = [1,8], num_channels=3, from_pretrained = True):
+        super().__init__(num_classes, backbone_arch='efficientnet-b2', from_pretrained=True)
+
+class EffUnet_b4_f(EfficientUnet_NonSiamese):
+     def __init__(self, num_classes = [1,8], num_channels=3, from_pretrained = True):
+        super().__init__(num_classes, backbone_arch='efficientnet-b4', from_pretrained=True)
+
