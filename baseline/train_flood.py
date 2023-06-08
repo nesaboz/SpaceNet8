@@ -75,6 +75,7 @@ def save_best_model(model, best_model_path):
 models = {
     'resnet34_siamese': unet.Resnet34_siamese_upsample,
     'resnet34': unet.Resnet34_upsample,
+    'resnet50_siamese': unet.Resnet50_siamese_upsample,
     'resnet50': unet.Resnet50_upsample,
     'resnet101': unet.Resnet101_upsample,
     'seresnet50': unet.SeResnet50_upsample,

@@ -17,14 +17,16 @@ run_root = Path('/tmp/share/runs/spacenet8/nenad')
 
 def plot_mIoU_vs_models():
     run_paths = ['/tmp/share/runs/spacenet8/nenad/2023-06-06-07-52_resnet34',
+                 '/tmp/share/runs/spacenet8/nenad/2023-06-08-06-25_resnet50',
                  '/tmp/share/runs/spacenet8/naijing/2023-06-07-01-29/dense_121', 
                  '/tmp/share/runs/spacenet8/naijing/2023-06-07-04-22/dense_161',
                  '/tmp/share/runs/spacenet8/nenad/2023-06-06-06-05_segformer_b0',
                  '/tmp/share/runs/spacenet8/nenad/2023-06-07-23-34_segformer_b1',
+                 '/tmp/share/runs/spacenet8/nenad/2023-06-08-02-20_segformer_b2',
                  '/tmp/share/runs/spacenet8/naijing/2023-06-07-19-28/effunet_b2',
                  '/tmp/share/runs/spacenet8/naijing/2023-06-07-21-54/effunet_b4',
                  ]
-    model_names = ['resnet34', 'dense-121', 'dense-161', 'segformer_b0', 'segformer_b1', 'effunet_b2', 'effunet_b4']
+    model_names = ['resnet34', 'resnet_50', 'dense-121', 'dense-161', 'segformer_b0', 'segformer_b1',  'segformer_b2', 'effunet_b2', 'effunet_b4']
     sample_foundation_images = {}
     sample_flood_images = {}
     result = pd.DataFrame()
@@ -49,7 +51,7 @@ def plot_mIoU_vs_models():
     result['n_params'] = result['n_params'] * 1e-6
     result['iou'] = result['iou'] * 1e2
     
-    fig, ax = plt.subplots(2, 1, figsize=(5, 6), gridspec_kw={'height_ratios': [1, 1.5]})
+    fig, ax = plt.subplots(2, 1, figsize=(5, 8), gridspec_kw={'height_ratios': [1, 1]})
     plt.subplots_adjust(hspace=0.4)
     plt.subplot(2, 1, 1)
     
@@ -64,41 +66,57 @@ def plot_mIoU_vs_models():
     
     for index, row in result_agg.iterrows():
         plt.scatter(row.n_params, row.iou, label=row.name)
-        plt.annotate(row.name, (row.n_params+1, row.iou+0.5))
+        plt.annotate(row.name, (row.n_params+1, row.iou+0.5), fontsize=9)
+        # plt.annotate(row.name, (row.n_params+1, row.iou+0.5), xytext=(row.n_params-10, row.iou+3), fontsize=9,
+        #              arrowprops=dict(arrowstyle='->'))
     
     # ax.legend(bbox_to_anchor=(1.05, 1), ncol=1)
     ax[0].set_xlabel('Number of parameters (M)')
     ax[0].set_ylabel('mIoU (%)')
-    ax[0].set_title('Mean IoU')
+    ax[0].set_title('Mean IoU (buildings only)')
     ax[0].set_ylim(35, 60)
-    ax[0].set_xlim(0, 110)
+    ax[0].set_xlim(0, 170)
     # ax[0].legend(loc='upper right')
         
     # fig, ax = plt.subplots(figsize=(5, 3))
     
-    
-    
-    plt.subplot(2, 1, 2)
     df = result.pivot(index='model_name', columns='class', values='iou')
     df.reset_index(inplace=True)
-    df.plot(x='model_name', y=['building', 'non-flooded building', 'flooded building'], kind='bar', ax=ax[1])
+    
+    plt.subplot(2, 1, 2)
+    df.plot(x='model_name', 
+            y=['building', 'non-flooded building', 'flooded building'], 
+            kind='bar', 
+            ax=ax[1])
     plt.xticks(rotation=0)
-    plt.xlabel('Model')
+    plt.xlabel('Encoder')
     plt.ylabel('IoU (%)')
-    plt.title('IoU per class')
+    plt.title('IoU per class (buildings only)')
     plt.ylim(0,100)
-    plt.legend(loc='upper right')
+    plt.legend(loc='upper right', ncol=2)
     plt.xticks(rotation=15)
     plt.grid(axis='y')
+    
+    # plt.subplot(3, 1, 3)
+    # df.plot(x='model_name', 
+    #         y=['road', 'non-flooded road', 'flooded road'], 
+    #         kind='bar', 
+    #         ax=ax[1])
+    # plt.xticks(rotation=0)
+    # plt.xlabel('Encoder')
+    # plt.ylabel('IoU (%)')
+    # plt.title('IoU per class')
+    # plt.ylim(0,100)
+    # plt.legend(loc='upper right', ncol=2)
+    # plt.xticks(rotation=15)
+    # plt.grid(axis='y')
+    
     
     plt.savefig(os.path.join(BASELINE, f'results/iou_vs_model.png'),
                 dpi=300)
                 # bbox_inches=Bbox.from_extents(-0.2, -0.2, 8, 4)
-                
     
     plt.show()
-    
-    
     
     # for model_name in result.iterrows():
     # plt.scatter(x=result['n_params'], y=result['building_iou'], label='building')
