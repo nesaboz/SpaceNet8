@@ -18,6 +18,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import models.other.segformer as segformer
 from utils.utils import freeze_model, unfreeze_model, count_parameters
+from matplotlib.transforms import Bbox
 
 
 train_csv="/tmp/share/data/spacenet8/sn8_data_train.csv"
@@ -49,16 +50,15 @@ def run_experiment():
             foundation_kwargs={}
         )
 
-def plot_experiment():
+def plot_segmentation_head():
     """
     We aggregate metrics from 3 runs, look only at foundation loss, plot the three loss graphs (line plot) and IoUs (bar plot)
     """
     run_folder = Path('/tmp/share/runs/spacenet8/nenad/2023-06-06-02-49_head')
     model_names = ['segformer_b0_1x1_conv_head', 'segformer_b0_double_conv_head', 'segformer_b0']
     model_labels = ['1x1 conv', 'double 3x3', '3x3 conv']
-    labels = ['train_loss', 'val_loss']
     losses = []
-    fig, axs = plt.subplots(1, 2, figsize=(10, 5))
+    _, ax = plt.subplots(1, 1, figsize=(5, 3))
                             
     colors = ('blue', 'red', 'green')
     iou = []
@@ -73,44 +73,25 @@ def plot_experiment():
         train_tot_loss = [epoch_data[i]['train_tot_loss'] for i in range(n_epochs)]
         val_tot_loss = [epoch_data[i]['val_tot_loss'] for i in range(n_epochs)]
         losses.append(loss)
-        axs[0].plot(range(n_epochs), train_tot_loss, label='train_loss_' + model_label, color=color)
-        axs[0].plot(range(n_epochs), val_tot_loss, '--', label='val_loss_' + model_label, color=color)
+        ax.plot(range(n_epochs), train_tot_loss, label='train_loss_' + model_label, color=color)
+        ax.plot(range(n_epochs), val_tot_loss, '--', label='val_loss_' + model_label, color=color)
         
         iou.append(metrics_eval['metrics_by_class']['building']['iou'])
          
-    axs[0].set_xlabel('Epoch')
-    axs[0].set_ylabel('Loss')
-    axs[0].set_title('Loss for different heads')
-    # plt.legend(bbox_to_anchor=(1.04,1))
-    legend2 = axs[0].legend(loc="upper right", fontsize="xx-small")
+    ax.set_xlabel('Epoch')
+    ax.set_ylabel('Loss')
+    ax.set_title('Segformer head comparison')
+    ax.legend(loc="upper right", fontsize="small")    
     
-    # plt.grid(True)
-    
-    axs[1].set_ylabel('IoU')
-    axs[1].bar(range(len(iou)), iou, tick_label=model_labels, color=colors)
-    # axs[1].set_aspect('equal')
-    # axs[1].set_xticks(range(3), model_names)
-    axs[1].set_title('IoU for different Segformer heads')
-    # plt.legend(model_names)
-        
-    # # fig, axs = plt.subplot(1,2, figsize=(10,5))
-    # plt.subplot(1,2,1)
-    # plt.xlabel('Number of parameters')
-    # plt.ylabel('epoch duration (s)')
-    # plt.title('Epoch duration vs number of learnable parameters')
-    # plt.grid(True)
-    
-    
-    now = datetime.now() 
-    # plt.savefig(os.path.join(BASELINE, f'results/{now.strftime("%Y-%m-%d-%H-%M")}_epoch_time_vs_params.png'))
-    plt.savefig(os.path.join(BASELINE, f'results/{now.strftime("%Y-%m-%d-%H-%M")}_loss_vs_head.png'))
-    
+    print(", ".join([f'{b:.3f} ({a})' for a, b in zip(model_labels, iou)]))
+    plt.savefig(os.path.join(BASELINE, f'results/segformer_head_comparison.png'),
+                dpi=300, 
+                bbox_inches=Bbox.from_extents(-0.2, -0.2, 5, 3))
     plt.show()
-
             
 
 if __name__ == '__main__':
     # run_experiment()
-    plot_experiment()
+    plot_segmentation_head()
 
         
