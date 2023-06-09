@@ -15,6 +15,15 @@ from utils.log import load_from_json
 
 run_root = Path('/tmp/share/runs/spacenet8/nenad')
 
+sample_images = ['10300100AF395C00_2_16_51_pred.png',
+                 '10500500C4DD7000_0_27_63_pred.png',
+                 '10400100684A4B00_1_8_88_pred.png']
+
+
+sample_foundation_images_fcn = lambda run_path: [os.path.join(run_path, 'foundation/pngs', x) for x in sample_images]
+sample_flood_images_fcn = lambda run_path: [os.path.join(run_path, 'flood/pngs', x) for x in sample_images]
+
+
 def plot_mIoU_vs_models():
     run_paths = ['/tmp/share/runs/spacenet8/nenad/2023-06-06-07-52_resnet34',
                  '/tmp/share/runs/spacenet8/nenad/2023-06-08-06-25_resnet50',
@@ -43,8 +52,8 @@ def plot_mIoU_vs_models():
         df = df.rename_axis('class')
         df.reset_index(inplace=True)
         result = pd.concat([result, df])
-        sample_foundation_images[model_name] = os.path.join(run_path, 'foundation/pngs/10300100AF395C00_2_16_51_pred.png')
-        sample_flood_images[model_name] = os.path.join(run_path, 'flood/pngs/10300100AF395C00_2_16_51_pred.png')
+        sample_foundation_images[model_name] = sample_foundation_images_fcn(run_path)             
+        sample_flood_images[model_name] = sample_flood_images_fcn(run_path)
 
     
     result = result[~result['class'].str.contains('road')]

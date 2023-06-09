@@ -18,23 +18,23 @@ import numpy as np
 def plot_scatter(x, y, labels):
     assert len(x) == len(y) == len(labels), "Input lists must have the same length"
 
+    fig, ax = plt.subplots(figsize=(6,4))
     plt.scatter(x, y)
     for i, label in enumerate(labels):
         plt.annotate(label, (x[i], y[i]+0.1))
 
-    plt.xlabel('Number of parameters (M)')
-    
-    plt.ylabel('Time per epoch (minutes)')
-    plt.title('Forward + Backward pass duration for Foundation models')
-    plt.grid(True)
-    now = datetime.now() 
-    plt.ylim(0, 1.1*max(y))
     plt.xlim(-2, 1.2*max(x))
-    plt.plot([-2, 1.2*max(x)], [4.5, 4.5], linestyle='--', color='red')
-    plt.annotate('Data transfer per epoch (A6000)', (0, 4.5+0.1))
+    plt.ylim(0, 1.1*max(y))
+    
+    plt.xlabel('Number of parameters (M)')
+    # plt.legend(['Computation time'])
+    plt.ylabel('Epoch duration (min)')
+    plt.title('A6000 epoch duration accross models')
+    plt.grid(True)
 
     # plt.axis([0, 1.1*max(x), 0, 1.1*max(y)])
-    plt.savefig(os.path.join(BASELINE, f'results/epoch_time.png'))
+    plt.savefig(os.path.join(BASELINE, f'results/epoch_time.png'),
+                dpi=300, bbox_inches='tight')
     print(f'Created file.')
     plt.show()
     

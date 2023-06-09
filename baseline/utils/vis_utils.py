@@ -88,44 +88,53 @@ import numpy as np
 plt.rcParams["savefig.bbox"] = 'tight'
 
 
-def plot_pil_images(imgs, titles, max_per_row=5, figsize=(10,10), 
-                    save_path=None, **imshow_kwargs):
+def plot_pil_images(imgs, titles, max_per_row=5, figsize=(5,5), 
+                    save_path=None, remove=[], **imshow_kwargs):
     
     N = len(imgs)
     if titles:
-        assert len(imgs) == len(titles)
+        assert N == len(titles)
     else:
-        titles = ['']*len(imgs)
+        titles = [''] * N
+     
+    if N <= max_per_row:
+        imgs = [imgs]
+        titles = [titles]
+    else:
+        # convert 1D imgs to 2D dimgs
+        dimgs = []
+        dtitles = []
+        while len(imgs) > max_per_row:
+            dimgs.append(imgs[:max_per_row])
+            dtitles.append(titles[:max_per_row])
+            imgs = imgs[max_per_row:]
+            titles = titles[max_per_row:]
+        dimgs.append(imgs)
+        dtitles.append(titles)
+        imgs = dimgs
+        titles = dtitles
         
-    dimgs = []
-    dtitles = []
-    while len(imgs) > max_per_row:
-        dimgs.append(imgs[:max_per_row])
-        dtitles.append(titles[:max_per_row])
-        imgs = imgs[max_per_row:]
-        titles = titles[max_per_row:]
-    dimgs.append(imgs)
-    dtitles.append(titles)
-    
-    imgs = dimgs
-    titles = dtitles
-    
     num_rows = len(imgs)
     num_cols = len(imgs[0])
     fig, axs = plt.subplots(nrows=num_rows, ncols=num_cols, figsize=figsize)
-    i = 0
+
     for row_idx, row in enumerate(imgs):
         for col_idx, img in enumerate(row):
-            ax = axs[row_idx, col_idx]
+            if num_rows == 1:
+                ax = axs[col_idx]
+            else:
+                ax = axs[row_idx, col_idx]
             ax.imshow(np.asarray(img), **imshow_kwargs)
             ax.set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
             ax.set_title(titles[row_idx][col_idx])
-    
+     
     # delete unused axes
-    while i < num_rows*num_cols:
-        ax = axs[i//num_cols, i%num_cols]
+    for i in remove + list(range(N, num_rows*num_cols)):
+        if num_rows == 1:
+            ax = axs[i]
+        else:
+            ax = axs[i//num_cols, i%num_cols]
         ax.set_axis_off()
-        i += 1
             
     plt.tight_layout()
     if save_path:
@@ -134,5 +143,6 @@ def plot_pil_images(imgs, titles, max_per_row=5, figsize=(10,10),
                     bbox_inches='tight'
                     # bbox_inches=Bbox.from_extents(-0.2, -0.2, 8, 4)
         )
+        print(f'Saved to {save_path}')
     
     plt.show()
