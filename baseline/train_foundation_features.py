@@ -189,10 +189,16 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
             roadspeed = roadspeed.cuda().float()
             building = building.cuda().float()
 
-            padded_preimg = torch.nn.functional.pad(preimg, (6, 6, 6, 6))
-            padded_building_pred, padded_road_pred = model(padded_preimg)
-            building_pred = padded_building_pred[..., 6:-6, 6:-6]
-            road_pred = padded_road_pred[..., 6:-6, 6:-6]
+            pad_models = ['effunet_b2', 'effunet_b4', 'dense_121', 'dense_161']
+
+            if model_name in pad_models:
+                padded_preimg = torch.nn.functional.pad(preimg, (6, 6, 6, 6))
+                padded_building_pred, padded_road_pred = model(padded_preimg)
+                building_pred = padded_building_pred[..., 6:-6, 6:-6]
+                road_pred = padded_road_pred[..., 6:-6, 6:-6]
+
+            else:
+                building_pred, road_pred = model(preimg)
 
 
             bce_l = bceloss(building_pred, building)
@@ -262,12 +268,17 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
                 roadspeed = roadspeed.cuda().float()
                 building = building.cuda().float()
 
-                padded_preimg = torch.nn.functional.pad(preimg, (6, 6, 6, 6))
-                padded_building_pred, padded_road_pred = model(padded_preimg)
-                building_pred = padded_building_pred[..., 6:-6, 6:-6]
-                road_pred = padded_road_pred[..., 6:-6, 6:-6]
+                pad_models = ['effunet_b2', 'effunet_b4', 'dense_121', 'dense_161']
 
-                # building_pred, road_pred = model(preimg)
+                if model_name in pad_models:
+                    padded_preimg = torch.nn.functional.pad(preimg, (6, 6, 6, 6))
+                    padded_building_pred, padded_road_pred = model(padded_preimg)
+                    building_pred = padded_building_pred[..., 6:-6, 6:-6]
+                    road_pred = padded_road_pred[..., 6:-6, 6:-6]
+
+                else:
+                    building_pred, road_pred = model(preimg)
+
                 bce_l = bceloss(building_pred, building)
                 y_pred = F.sigmoid(road_pred)
 

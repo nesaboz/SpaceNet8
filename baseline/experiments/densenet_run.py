@@ -6,7 +6,6 @@ n_params nad time per epoch will be stored in metrics.json
 import sys
 import os
 BASELINE = '/tmp/share/repos/naijing/SpaceNet8/baseline/'
-print(BASELINE)
 sys.path.append(BASELINE)
 # print(sys.path)
 from pathlib import Path
@@ -34,8 +33,8 @@ def run_experiment():
     folder = os.path.join(run_root, now.strftime("%Y-%m-%d-%H-%M"))
 
     # flood_model_name = 'dense_161_siamese'
-    flood_model_name = 'effunet_b4_siamese'
     # model_name = 'dense_161'
+    flood_model_name = 'effunet_b4_siamese'
     model_name = 'effunet_b4'
 
     run(

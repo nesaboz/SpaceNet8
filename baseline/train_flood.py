@@ -216,13 +216,18 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
             flood = np.argmax(flood, axis = 1) # this is needed for cross-entropy loss. 
 
             flood = torch.tensor(flood).cuda()
-            combinedimg = torch.cat((preimg, postimg), dim=1)
-            combinedimg = combinedimg.cuda().float()
-            padded_combinedimg = torch.nn.functional.pad(combinedimg, (6, 6, 6, 6))
-            padded_flood_pred = model(padded_combinedimg) # this is for resnet34 with stacked preimg+postimg input
-            flood_pred = padded_flood_pred[..., 6:-6, 6:-6]
+
+            pad_models = ['effunet_b2', 'effunet_b4', 'dense_121', 'dense_161']
+
+            if model_name in pad_models:
+                combinedimg = torch.cat((preimg, postimg), dim=1)
+                combinedimg = combinedimg.cuda().float()
+                padded_combinedimg = torch.nn.functional.pad(combinedimg, (6, 6, 6, 6))
+                padded_flood_pred = model(padded_combinedimg) # stacked preimg+postimg input
+                flood_pred = padded_flood_pred[..., 6:-6, 6:-6]
             
-            # flood_pred = model(preimg, postimg) # this is for siamese resnet34 with stacked preimg+postimg input
+            else:
+                flood_pred = model(preimg, postimg) # this is for siamese resnet34 with stacked preimg+postimg input
 
             #y_pred = F.sigmoid(flood_pred)
             #focal_l = focal(y_pred, flood)
@@ -290,14 +295,20 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
                 #temp[:,4] = np.max(flood[:,:2], axis=1)
                 #temp[:,5] = np.max(flood[:,2:], axis=1)
                 #flood = temp
+                
 
                 flood = torch.tensor(flood).cuda()
-                padded_combinedimg = torch.nn.functional.pad(combinedimg, (6, 6, 6, 6))
-                padded_flood_pred = model(padded_combinedimg) # this is for resnet34 with stacked preimg+postimg input
-                flood_pred = padded_flood_pred[..., 6:-6, 6:-6]
+                pad_models = ['effunet_b2', 'effunet_b4', 'dense_121', 'dense_161']
 
-                # flood_pred = model(combinedimg) # this is for resnet34 with stacked preimg+postimg input
-                # flood_pred = model(preimg, postimg) # this is for siamese resnet34 with stacked preimg+postimg input
+                if model_name in pad_models:
+                    combinedimg = torch.cat((preimg, postimg), dim=1)
+                    combinedimg = combinedimg.cuda().float()
+                    padded_combinedimg = torch.nn.functional.pad(combinedimg, (6, 6, 6, 6))
+                    padded_flood_pred = model(padded_combinedimg) # stacked preimg+postimg input
+                    flood_pred = padded_flood_pred[..., 6:-6, 6:-6]
+                
+                else:
+                    flood_pred = model(preimg, postimg) 
 
 
                 #y_pred = F.sigmoid(flood_pred)
