@@ -34,9 +34,9 @@ def run_experiment():
     folder = os.path.join(run_root, now.strftime("%Y-%m-%d-%H-%M"))
 
     # flood_model_name = 'dense_161_siamese'
-    flood_model_name = 'effunet_b2_siamese'
+    flood_model_name = 'effunet_b4_siamese'
     # model_name = 'dense_161'
-    model_name = 'effunet_b2'
+    model_name = 'effunet_b4'
 
     run(
         save_dir=os.path.join(folder, model_name),

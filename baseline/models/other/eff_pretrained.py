@@ -802,6 +802,11 @@ class Dense_121_f(DensenetUnet_NonSiamese):
     def __init__(self, num_classes = [1,8], num_channels=3, from_pretrained = True):
         super().__init__(num_classes, backbone_arch='densenet121', from_pretrained=True)
 
+class Dense_161_f(DensenetUnet_NonSiamese):
+    def __init__(self, num_classes = [1,8], num_channels=3, from_pretrained = True):
+        super().__init__(num_classes, backbone_arch='densenet161', from_pretrained=True)
+
+
 class EffUnet_b2_f(EfficientUnet_NonSiamese):
      def __init__(self, num_classes = [1,8], num_channels=3, from_pretrained = True):
         super().__init__(num_classes, backbone_arch='efficientnet-b2', from_pretrained=True)
