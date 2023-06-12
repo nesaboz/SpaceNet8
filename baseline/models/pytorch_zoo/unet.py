@@ -60,6 +60,11 @@ class Resnet34_siamese_upsample(SiameseResnet):
         super().__init__(num_classes, num_channels, encoder_name='resnet34',
             from_pretrained=from_pretrained)
 
+class Resnet50_siamese_upsample(SiameseResnet):
+    def __init__(self, num_classes, num_channels=3, from_pretrained=True):
+        super().__init__(num_classes, num_channels, encoder_name='resnet50',
+            from_pretrained=from_pretrained)
+
 class Resnet34_upsample(Resnet):
     def __init__(self, num_classes, num_channels=3, from_pretrained=True):
         super().__init__(num_classes, num_channels, encoder_name='resnet34',

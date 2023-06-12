@@ -14,40 +14,40 @@ val_csv="/tmp/share/data/spacenet8/sn8_data_val.csv"
 run_root = Path('/tmp/share/runs/spacenet8/nenad')
 
 now = datetime.now() 
-tag = '_segformer_b0'
+tag = '_resnet50'
 save_dir = os.path.join(run_root, now.strftime("%Y-%m-%d-%H-%M") + tag)
 
 run(
     save_dir=save_dir,
     train_csv=train_csv,
     val_csv=val_csv,
-    foundation_model_name='segformer_b0',   # resnet34
+    foundation_model_name='resnet50',   # resnet34
     foundation_lr=0.0001,
-    foundation_batch_size=4,
+    foundation_batch_size=2,
     foundation_n_epochs=10,
-    flood_model_name='segformer_b0_siamese',  #  # resnet34_siamese
+    flood_model_name='resnet50_siamese',  #  # resnet34_siamese
     flood_lr=0.0001,
-    flood_batch_size=2,
+    flood_batch_size=1,
     flood_n_epochs=10
 )
 
-now = datetime.now() 
-tag = '_resnet34'
-save_dir = os.path.join(run_root, now.strftime("%Y-%m-%d-%H-%M") + tag)
+# now = datetime.now() 
+# tag = '_resnet34'
+# save_dir = os.path.join(run_root, now.strftime("%Y-%m-%d-%H-%M") + tag)
 
-run(
-    save_dir=save_dir,
-    train_csv=train_csv,
-    val_csv=val_csv,
-    foundation_model_name='resnet34',   # resnet34
-    foundation_lr=0.0001,
-    foundation_batch_size=4,
-    foundation_n_epochs=10,
-    flood_model_name='resnet34_siamese',  #  # resnet34_siamese
-    flood_lr=0.0001,
-    flood_batch_size=2,
-    flood_n_epochs=10
-)
+# run(
+#     save_dir=save_dir,
+#     train_csv=train_csv,
+#     val_csv=val_csv,
+#     foundation_model_name='resnet34',   # resnet34
+#     foundation_lr=0.0001,
+#     foundation_batch_size=4,
+#     foundation_n_epochs=10,
+#     flood_model_name='resnet34_siamese',  #  # resnet34_siamese
+#     flood_lr=0.0001,
+#     flood_batch_size=2,
+#     flood_n_epochs=10
+# )
 
 # # extra code to run evaluation only
 

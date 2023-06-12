@@ -4,6 +4,17 @@ import torch.nn.functional as F
 from transformers import SegformerForSemanticSegmentation, SegformerConfig
 from .unet import OutConv, Up
 
+class DummyModule(nn.Module):
+    def __init__(self, num_classes=[1,8], num_channels=3, from_pretrained=False):
+        super().__init__()
+        self.from_pretrained = from_pretrained
+        self.num_classes = num_classes
+        self.conv1 = nn.Conv2d(num_channels, self.num_classes[0], kernel_size=1)
+        self.conv2 = nn.Conv2d(num_channels, self.num_classes[1], kernel_size=1)
+        
+    def forward(self, x):
+        return self.conv1(x), self.conv2(x)
+    
 class SiameseSegformer(nn.Module):
     def __init__(self, num_classes=5, pretrained_model_name_or_path=None):
         '''
@@ -128,6 +139,13 @@ class Segformer_b1(Segformer):
             pretrained_model_name_or_path = 'nvidia/mit-b1'
         super().__init__(num_classes, pretrained_model_name_or_path)
 
+class Segformer_b2(Segformer):
+    def __init__(self, num_classes, num_channels=3, from_pretrained=True):
+        pretrained_model_name_or_path = None
+        if from_pretrained:
+            pretrained_model_name_or_path = 'nvidia/mit-b2'
+        super().__init__(num_classes, pretrained_model_name_or_path)
+
 class SiameseSegformer_b0(SiameseSegformer):
     def __init__(self, num_classes=5, num_channels=3, from_pretrained=True):
         pretrained_model_name_or_path = None
@@ -140,6 +158,13 @@ class SiameseSegformer_b1(SiameseSegformer):
         pretrained_model_name_or_path = None
         if from_pretrained:
             pretrained_model_name_or_path = 'nvidia/mit-b1'
+        super().__init__(num_classes, pretrained_model_name_or_path)
+
+class SiameseSegformer_b2(SiameseSegformer):
+    def __init__(self, num_classes=5, num_channels=3, from_pretrained=True):
+        pretrained_model_name_or_path = None
+        if from_pretrained:
+            pretrained_model_name_or_path = 'nvidia/mit-b2'
         super().__init__(num_classes, pretrained_model_name_or_path)
 
 # Models larger than b1 do not fit in P6000 GPU memory

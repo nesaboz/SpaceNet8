@@ -76,8 +76,11 @@ models = {
     'unet':UNet,
     'segformer_b0': segformer.Segformer_b0,
     'segformer_b1': segformer.Segformer_b1,
+    'segformer_b2': segformer.Segformer_b2,
     'segformer_b0_1x1_conv': segformer.Segformer_b0_1x1_conv,
     'segformer_b0_double_conv': segformer.Segformer_b0_double_conv,
+    
+    'dummy': segformer.DummyModule
 }
 
 
@@ -176,6 +179,7 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
         train_bce_loss = 0
         train_road_loss = 0
         train_building_loss = 0
+        epoch_duration_shorter = 0
         for i, data in enumerate(train_dataloader):
             optimizer.zero_grad()
 
@@ -185,6 +189,7 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
             roadspeed = roadspeed.cuda().float()
             building = building.cuda().float()
 
+            tic1 = time.time()
             building_pred, road_pred = model(preimg)
             bce_l = bceloss(building_pred, building)
             y_pred = F.sigmoid(road_pred)
@@ -203,7 +208,10 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
             train_road_loss += road_loss
             loss.backward()
             optimizer.step()
-
+            
+            toc1 = time.time()
+            epoch_duration_shorter += toc1 - tic1
+        
             if i == 0:
                 debug_msg('Training loop vars')
                 log_var_details('preimg', preimg)
@@ -288,7 +296,11 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
         toc = time.time()
         epoch_duration = toc - tic
         print(f"Epoch took: {epoch_duration/60.0:.1f} minutes")
-        training_metrics.add_epoch({**train_metrics, **val_metrics, 'epoch_duration': epoch_duration})
+        print(f"Forward/backward pass took: {epoch_duration_shorter} seconds")
+        
+        training_metrics.add_epoch({**train_metrics, **val_metrics, 
+                                    'epoch_duration': epoch_duration, 
+                                    'epoch_duration_shorter': epoch_duration_shorter})
 
         epoch_val_loss = val_metrics["val_tot_loss"]
         if epoch_val_loss < best_loss:

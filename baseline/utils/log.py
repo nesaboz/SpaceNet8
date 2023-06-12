@@ -6,6 +6,7 @@ import torch
 import torch.cuda
 import inspect
 import json
+from pathlib import Path
 import os
 
 class BaseMetrics:
@@ -129,6 +130,8 @@ def dump_to_json(save_dir, params):
         json.dump(params, f, indent=4)  # `indent` writes each new input on a new line
         
 def load_from_json(input_path):
+    if type(input_path) == str:
+        input_path = Path(input_path)
     with input_path.open() as f:
         return json.load(f)
         
