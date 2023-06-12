@@ -77,6 +77,7 @@ def save_best_model(model, best_model_path):
 models = {
     'resnet34_siamese': unet.Resnet34_siamese_upsample,
     'resnet34': unet.Resnet34_upsample,
+    'resnet50_siamese': unet.Resnet50_siamese_upsample,
     'resnet50': unet.Resnet50_upsample,
     'resnet101': unet.Resnet101_upsample,
     'seresnet50': unet.SeResnet50_upsample,
@@ -92,6 +93,7 @@ models = {
     'nestedunet_siamese':SNUNet_ECAM,
     'segformer_b0_siamese': segformer.SiameseSegformer_b0,
     'segformer_b1_siamese': segformer.SiameseSegformer_b1,
+    'segformer_b2_siamese': segformer.SiameseSegformer_b2,
     'effunet_b2_siamese': Densen_EffUnet.EffUnet_b2,
     'effunet_b4_siamese': Densen_EffUnet.EffUnet_b4,
     'dense_121_siamese': Densen_EffUnet.Dense_121,
