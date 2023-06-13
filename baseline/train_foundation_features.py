@@ -141,7 +141,7 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
     if model_name == "unet":
         model = UNet(3, [1,8], bilinear=True, **model_args)
     else:
-        model = models[model_name](num_classes=[1, 8], num_channels=3, **model_args)  # there is 1 class for the buiding and 8 classes for the road, hence [1, 8]
+        model = models[model_name](num_classes=[1, 8], num_channels=3, **model_args)  # there is 1 class for the building and 8 classes for the road, hence [1, 8]
     assert(hasattr(model, 'from_pretrained'))
     training_metrics.record_model_metrics(model)
     
