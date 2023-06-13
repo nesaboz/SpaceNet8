@@ -14,6 +14,8 @@ from datasets.datasets import SN8Dataset
 from core.losses import focal, soft_dice_loss
 import models.pytorch_zoo.unet as unet
 import models.other.segformer as segformer
+import models.other.eff_pretrained as Densen_EffUnet
+
 from models.other.unet import UNet
 from utils.log import debug_msg, log_var_details, dump_command_line_args, TrainingMetrics
 
@@ -79,8 +81,11 @@ models = {
     'segformer_b2': segformer.Segformer_b2,
     'segformer_b0_1x1_conv': segformer.Segformer_b0_1x1_conv,
     'segformer_b0_double_conv': segformer.Segformer_b0_double_conv,
-    
-    'dummy': segformer.DummyModule
+    'dummy': segformer.DummyModule,
+    'effunet_b2': Densen_EffUnet.EffUnet_b2_f,
+    'effunet_b4': Densen_EffUnet.EffUnet_b4_f,
+    'dense_121': Densen_EffUnet.Dense_121_f,
+    'dense_161': Densen_EffUnet.Dense_161_f
 }
 
 
@@ -188,9 +193,18 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
             preimg = preimg.cuda().float()
             roadspeed = roadspeed.cuda().float()
             building = building.cuda().float()
-
             tic1 = time.time()
-            building_pred, road_pred = model(preimg)
+
+            pad_models = ['effunet_b2', 'effunet_b4', 'dense_121', 'dense_161']
+
+            if model_name in pad_models:
+                padded_preimg = torch.nn.functional.pad(preimg, (6, 6, 6, 6))
+                padded_building_pred, padded_road_pred = model(padded_preimg)
+                building_pred = padded_building_pred[..., 6:-6, 6:-6]
+                road_pred = padded_road_pred[..., 6:-6, 6:-6]
+            else:
+                building_pred, road_pred = model(preimg)
+
             bce_l = bceloss(building_pred, building)
             y_pred = F.sigmoid(road_pred)
 
@@ -261,7 +275,17 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
                 roadspeed = roadspeed.cuda().float()
                 building = building.cuda().float()
 
-                building_pred, road_pred = model(preimg)
+                pad_models = ['effunet_b2', 'effunet_b4', 'dense_121', 'dense_161']
+
+                if model_name in pad_models:
+                    padded_preimg = torch.nn.functional.pad(preimg, (6, 6, 6, 6))
+                    padded_building_pred, padded_road_pred = model(padded_preimg)
+                    building_pred = padded_building_pred[..., 6:-6, 6:-6]
+                    road_pred = padded_road_pred[..., 6:-6, 6:-6]
+
+                else:
+                    building_pred, road_pred = model(preimg)
+
                 bce_l = bceloss(building_pred, building)
                 y_pred = F.sigmoid(road_pred)
 
@@ -322,5 +346,5 @@ if __name__ == "__main__":
     gpu = args.gpu
     checkpoint_path = args.checkpoint
 
-    dump_command_line_args(os.path.join(save_dir, 'args.txt'))
+    # dump_command_line_args(os.path.join(save_dir, 'args.txt'))
     train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size, n_epochs, gpu, checkpoint_path)

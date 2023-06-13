@@ -168,7 +168,18 @@ def flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu
             
             flood = torch.tensor(flood).cuda()
 
-            flood_pred = model(preimg, postimg) # siamese resnet34 with stacked preimg+postimg input
+            pad_models = ['effunet_b2', 'effunet_b4', 'dense_121', 'dense_161']
+
+            if model_name in pad_models:
+                combinedimg = torch.cat((preimg, postimg), dim=1)
+                combinedimg = combinedimg.cuda().float()
+                padded_combinedimg = torch.nn.functional.pad(combinedimg, (6, 6, 6, 6))
+                padded_flood_pred = model(padded_combinedimg) # stacked preimg+postimg input
+                flood_pred = padded_flood_pred[..., 6:-6, 6:-6]
+            
+            else:
+                flood_pred = model(preimg, postimg) #
+            
             flood_pred = torch.nn.functional.softmax(flood_pred, dim=1).cpu().numpy()[0] # (5, H, W)
             #for i in flood_pred:
             #    plt.imshow(i)
