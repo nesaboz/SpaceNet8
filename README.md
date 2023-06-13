@@ -3,3 +3,5 @@ with equal contributions from: \
 Adrian Stoll ([@AdrS](https://github.com/adrs)), Naijing Guo ([@NaijingGuo](https://github.com/naijingguo)), and Nenad Bozinovic ([@nesaboz](https://github.com/nesaboz)).
 
 Project [**report**](https://github.com/nesaboz/SpaceNet8/blob/main/SpaceNet8_final_paper.pdf).
+
+Disclaimer: Some large chunks of code here are not ours but taken from SpaceNet8 [repo](https://github.com/SpaceNetChallenge/SpaceNet8). Refer to the project report for our contributions.
