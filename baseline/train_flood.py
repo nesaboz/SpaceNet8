@@ -92,6 +92,8 @@ models = {
     # No pretrained weights available
     'nestedunet_siamese':SNUNet_ECAM,
     'segformer_b0_siamese': segformer.SiameseSegformer_b0,
+    'segformer_b0_ade_siamese': segformer.SiameseSegformer_b0_ade,
+    'segformer_b0_cityscapes_siamese': segformer.SiameseSegformer_b0_cityscapes,
     'segformer_b1_siamese': segformer.SiameseSegformer_b1,
     'segformer_b2_siamese': segformer.SiameseSegformer_b2,
     'effunet_b2_siamese': Densen_EffUnet.EffUnet_b2,

@@ -16,7 +16,8 @@ class DummyModule(nn.Module):
         return self.conv1(x), self.conv2(x)
     
 class SiameseSegformer(nn.Module):
-    def __init__(self, num_classes=5, pretrained_model_name_or_path=None):
+    def __init__(self, num_classes=5, pretrained_model_name_or_path=None,
+            num_filters=64, ignore_mismatched_sizes=False):
         '''
         Constructs a SiameseSegformer model. If pretrained_model_name_or_path is
         not None, the model is initialized from pretrained weights.
@@ -26,13 +27,14 @@ class SiameseSegformer(nn.Module):
         if self.from_pretrained:
             print('Initialize from pretrained weights...')
             self.segformer = SegformerForSemanticSegmentation.from_pretrained(
-                pretrained_model_name_or_path, num_labels=64)
+                pretrained_model_name_or_path, num_labels=num_filters,
+                ignore_mismatched_sizes=ignore_mismatched_sizes)
         else:
             print('Do not initialize from pretrained weights...')
-            config = SegformerConfig(num_labels=64)
+            config = SegformerConfig(num_labels=num_filters)
             self.segformer = SegformerForSemanticSegmentation(config)
-        self.penultimate_conv = nn.Conv2d(128, 64, kernel_size=3, padding=1)
-        self.outc1 = OutConv(64, num_classes)
+        self.penultimate_conv = nn.Conv2d(2*num_filters, num_filters, kernel_size=3, padding=1)
+        self.outc1 = OutConv(num_filters, num_classes)
 
     def forward_once(self, x):
         return self.segformer(x).logits
@@ -56,19 +58,20 @@ class Upscale(nn.Module):
         return F.interpolate(x, scale_factor=self.scale_factor)
 
 class Segformer(nn.Module):
-    def __init__(self, num_classes=[1, 8], pretrained_model_name_or_path=None, final_layer='linear'):
+    def __init__(self, num_classes=[1, 8], pretrained_model_name_or_path=None,
+            num_filters=64, ignore_mismatched_sizes=False):
         super().__init__()
         '''
         Constructs a Segformer model. If pretrained_model_name_or_path is
         not None, the model is initialized from pretrained weights.
         '''
-        num_filters = 64
 
         self.from_pretrained = pretrained_model_name_or_path is not None
         if self.from_pretrained:
             print('Initialize from pretrained weights...')
             self.segformer = SegformerForSemanticSegmentation.from_pretrained(
-                pretrained_model_name_or_path, num_labels=num_filters)
+                pretrained_model_name_or_path, num_labels=num_filters,
+                ignore_mismatched_sizes=ignore_mismatched_sizes)
         else:
             print('Do not initialize from pretrained weights...')
             config = SegformerConfig(num_labels=num_filters)
@@ -132,11 +135,37 @@ class Segformer_b0_no_head(Segformer_b0):
     def make_final_classifier(self, in_filters, num_classes):
         return nn.Sequential()
         
+class Segformer_b0_ade(Segformer):
+    def __init__(self, num_classes, num_channels=3, from_pretrained=True):
+        pretrained_model_name_or_path = None
+        if from_pretrained:
+            pretrained_model_name_or_path = 'nvidia/segformer-b0-finetuned-ade-512-512'
+        # TODO: try setting `ignore_mismatched_sizes=True`
+        # instead of changing num_filters
+        super().__init__(num_classes, pretrained_model_name_or_path,
+            num_filters=150)
+
+class Segformer_b0_cityscapes(Segformer):
+    def __init__(self, num_classes, num_channels=3, from_pretrained=True):
+        pretrained_model_name_or_path = None
+        if from_pretrained:
+            pretrained_model_name_or_path = 'nvidia/segformer-b0-finetuned-cityscapes-1024-1024'
+        super().__init__(num_classes, pretrained_model_name_or_path,
+            #num_filters=19,
+            ignore_mismatched_sizes=True)
+
 class Segformer_b1(Segformer):
     def __init__(self, num_classes, num_channels=3, from_pretrained=True):
         pretrained_model_name_or_path = None
         if from_pretrained:
             pretrained_model_name_or_path = 'nvidia/mit-b1'
+        super().__init__(num_classes, pretrained_model_name_or_path)
+
+class Segformer_b2(Segformer):
+    def __init__(self, num_classes, num_channels=3, from_pretrained=True):
+        pretrained_model_name_or_path = None
+        if from_pretrained:
+            pretrained_model_name_or_path = 'nvidia/mit-b2'
         super().__init__(num_classes, pretrained_model_name_or_path)
 
 class Segformer_b2(Segformer):
@@ -153,11 +182,36 @@ class SiameseSegformer_b0(SiameseSegformer):
             pretrained_model_name_or_path = 'nvidia/mit-b0'
         super().__init__(num_classes, pretrained_model_name_or_path)
 
+class SiameseSegformer_b0_ade(SiameseSegformer):
+    def __init__(self, num_classes=5, num_channels=3, from_pretrained=True):
+        pretrained_model_name_or_path = None
+        if from_pretrained:
+            pretrained_model_name_or_path = 'nvidia/segformer-b0-finetuned-ade-512-512'
+        super().__init__(num_classes, pretrained_model_name_or_path,
+            num_filters=150)
+            #ignore_mismatched_sizes=True)
+
+class SiameseSegformer_b0_cityscapes(SiameseSegformer):
+    def __init__(self, num_classes=5, num_channels=3, from_pretrained=True):
+        pretrained_model_name_or_path = None
+        if from_pretrained:
+            pretrained_model_name_or_path = 'nvidia/segformer-b0-finetuned-cityscapes-1024-1024'
+        super().__init__(num_classes, pretrained_model_name_or_path,
+            #num_filters=19,
+            ignore_mismatched_sizes=True)
+
 class SiameseSegformer_b1(SiameseSegformer):
     def __init__(self, num_classes=5, num_channels=3, from_pretrained=True):
         pretrained_model_name_or_path = None
         if from_pretrained:
             pretrained_model_name_or_path = 'nvidia/mit-b1'
+        super().__init__(num_classes, pretrained_model_name_or_path)
+
+class SiameseSegformer_b2(SiameseSegformer):
+    def __init__(self, num_classes=5, num_channels=3, from_pretrained=True):
+        pretrained_model_name_or_path = None
+        if from_pretrained:
+            pretrained_model_name_or_path = 'nvidia/mit-b2'
         super().__init__(num_classes, pretrained_model_name_or_path)
 
 class SiameseSegformer_b2(SiameseSegformer):

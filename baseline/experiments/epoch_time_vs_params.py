@@ -78,7 +78,7 @@ def plot_epoch_time():
     plot_scatter(n_params, epoch_times_short, model_names)
 
 if __name__ == '__main__':
-    # epoch duration shorter /tmp/share/runs/spacenet8/nenad/2023-06-07-21-47
+      # epoch duration shorter /tmp/share/runs/spacenet8/nenad/2023-06-07-21-47
     # epoch duration '/tmp/share/runs/spacenet8/nenad/2023-06-05-18-49_epoch_time_vs_param')  # latest run: '/tmp/share/runs/spacenet8/nenad/2023-06-05-18-49_epoch_time_vs_param'
     # plot_epoch_time('/tmp/share/runs/spacenet8/nenad/2023-06-07-21-47', tag='shorter')  # 
     # plot_epoch_time('/tmp/share/runs/spacenet8/nenad/2023-06-05-18-49_epoch_time_vs_param')  # latest run: '/tmp/share/runs/spacenet8/nenad/2023-06-05-18-49_epoch_time_vs_param')  # 

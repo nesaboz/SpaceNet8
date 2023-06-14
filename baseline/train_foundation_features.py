@@ -77,6 +77,8 @@ models = {
     'seresnext101': unet.SeResnext101_32x4d_upsample,
     'unet':UNet,
     'segformer_b0': segformer.Segformer_b0,
+    'segformer_b0_ade': segformer.Segformer_b0_ade,
+    'segformer_b0_cityscapes': segformer.Segformer_b0_cityscapes,
     'segformer_b1': segformer.Segformer_b1,
     'segformer_b2': segformer.Segformer_b2,
     'segformer_b0_1x1_conv': segformer.Segformer_b0_1x1_conv,

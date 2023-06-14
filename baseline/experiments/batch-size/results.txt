@@ -1,0 +1,23 @@
+I trained and evaluated each network on increasingly large batch sizes until
+each ran out of memory.
+
+A6000
+
+model, max batch size
+--------------------- foundation network --------------
+resnet34, 8
+resnet50, 6
+resnet101, 4
+segformer_b0, 7
+segformer_b0_ade, 8
+segformer_b0_cityscapes, 8
+segformer_b1, 6
+segformer_b2, 3
+
+--------------------- flood network --------------
+resnet34_siamese, 6
+segformer_b0_siamese, 4
+segformer_b0_ade_siamese, 4
+segformer_b0_cityscapes_siamese, 4
+segformer_b1_siamese, 4
+segformer_b2_siamese, 1

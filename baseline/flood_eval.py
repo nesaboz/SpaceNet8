@@ -96,6 +96,24 @@ def make_prediction_png(image, postimage, gt, prediction, save_figure_filename):
     plt.close(fig)
     plt.close('all')
                 
+    
+models = {
+    'resnet34_siamese': unet.Resnet34_siamese_upsample,
+    'resnet34': unet.Resnet34_upsample,
+    'resnet50': unet.Resnet50_upsample,
+    'resnet101': unet.Resnet101_upsample,
+    'seresnet50': unet.SeResnet50_upsample,
+    'seresnet101': unet.SeResnet101_upsample,
+    'seresnet152': unet.SeResnet152_upsample,
+    'seresnext50': unet.SeResnext50_32x4d_upsample,
+    'seresnext101': unet.SeResnext101_32x4d_upsample,
+    'unet_siamese': UNetSiamese,
+    'segformer_b0_siamese': segformer.SiameseSegformer_b0,
+    'segformer_b0_ade_siamese': segformer.SiameseSegformer_b0_ade,
+    'segformer_b0_cityscapes_siamese': segformer.SiameseSegformer_b0_cityscapes,
+    'segformer_b1_siamese': segformer.SiameseSegformer_b1,
+    'segformer_b2_siamese': segformer.SiameseSegformer_b2,
+}
 
 def flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu=0, create_folders=True):
     """
