@@ -95,6 +95,25 @@ def plot_pil_images(imgs, titles, max_per_row=5, figsize=(5,5),
     if titles:
         assert N == len(titles)
     else:
+        titles = ['']*len(imgs)
+    
+    if N <= max_per_row:
+        imgs = [imgs]
+        titles = [titles]
+    else:
+        # convert 1D imgs to 2D dimgs
+        dimgs = []
+        dtitles = []
+        while len(imgs) > max_per_row:
+            dimgs.append(imgs[:max_per_row])
+            dtitles.append(titles[:max_per_row])
+            imgs = imgs[max_per_row:]
+            titles = titles[max_per_row:]
+        dimgs.append(imgs)
+        dtitles.append(titles)
+        imgs = dimgs
+        titles = dtitles
+        
         titles = [''] * N
      
     if N <= max_per_row:

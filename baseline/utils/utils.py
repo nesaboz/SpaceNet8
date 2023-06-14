@@ -1,9 +1,3 @@
-IMAGENET_MEAN = [0.485, 0.456, 0.406]
-IMAGENET_STD = [0.229, 0.224, 0.225]
-
-from torchvision.transforms import Normalize
-imagenet_normalizer = Normalize(IMAGENET_MEAN, IMAGENET_STD)
-
 from osgeo import gdal
 
 def write_geotiff(output_tif, ncols, nrows,

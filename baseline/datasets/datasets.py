@@ -7,6 +7,12 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
+IMAGENET_MEAN = [0.485, 0.456, 0.406]
+IMAGENET_STD = [0.229, 0.224, 0.225]
+
+from torchvision.transforms import Normalize
+imagenet_normalizer = Normalize(IMAGENET_MEAN, IMAGENET_STD)
+
 class SN8Dataset(Dataset):
     def __init__(self,
                  csv_filename: str,
@@ -67,11 +73,15 @@ class SN8Dataset(Dataset):
                 else:
                     ds = gdal.Open(filepath)
                 image = ds.ReadAsArray()
+                image = torch.from_numpy(image).float()
+                if i in ['preimg', 'postimg']:
+                    image = imagenet_normalizer(image / 255.0)
+                    
                 ds = None
                 if len(image.shape)==2: # add a channel axis if read image is only shape (H,W).
-                    returned_data.append(torch.unsqueeze(torch.from_numpy(image), dim=0).float())
+                    returned_data.append(torch.unsqueeze(image, dim=0))
                 else:
-                    returned_data.append(torch.from_numpy(image).float())
+                    returned_data.append(image)
             else:
                 returned_data.append(0)
 
