@@ -11,6 +11,7 @@ from matplotlib import colors
 import torch
 import torch.nn as nn
 
+from models import foundation_models
 from train_foundation_features import models
 
 import models.pytorch_zoo.unet as unet
@@ -118,22 +119,7 @@ def make_prediction_png_roads_buildings(image, gts, predictions, save_figure_fil
     plt.close(fig)
     plt.close('all')
 
-models = {
-    'resnet34': unet.Resnet34_upsample,
-    'resnet50': unet.Resnet50_upsample,
-    'resnet101': unet.Resnet101_upsample,
-    'seresnet50': unet.SeResnet50_upsample,
-    'seresnet101': unet.SeResnet101_upsample,
-    'seresnet152': unet.SeResnet152_upsample,
-    'seresnext50': unet.SeResnext50_32x4d_upsample,
-    'seresnext101': unet.SeResnext101_32x4d_upsample,
-    'unet':UNet,
-    'segformer_b0': segformer.Segformer_b0,
-    'segformer_b0_ade': segformer.Segformer_b0_ade,
-    'segformer_b0_cityscapes': segformer.Segformer_b0_cityscapes,
-    'segformer_b1': segformer.Segformer_b1,
-    'segformer_b2': segformer.Segformer_b2,
-}
+models = foundation_models
 
 def foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu=0, create_folders=True):
     """

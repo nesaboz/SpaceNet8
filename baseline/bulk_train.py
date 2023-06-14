@@ -151,40 +151,47 @@ def train_models(save_dir, foundation_runs=[], flood_runs=[]):
     os.makedirs(save_dir, exist_ok=True)
     metrics = {}
     for r in foundation_runs:
-        print('Starting', r.run_label, '...')
-        run_metrics = end2end.run(
-            save_dir=r.save_dir,
-            train_csv=r.train_csv,
-            val_csv=r.val_csv,
-            gpu=r.gpu,
-            foundation_model_name=r.model_name,
-            foundation_lr=r.lr,
-            foundation_batch_size=r.batch_size,
-            foundation_n_epochs=r.n_epochs,
-            foundation_model_args={
-                'from_pretrained':r.from_pretrained
-            })
-        metrics[r.run_label] = end2end.values_to_json_obj(run_metrics)
-        with open(os.path.join(save_dir, 'metrics.json'), 'w') as f:
-            json.dump(metrics, f, indent=4)
-
+        try:
+            print('Starting', r.run_label, '...')
+            run_metrics = end2end.run(
+                save_dir=r.save_dir,
+                train_csv=r.train_csv,
+                val_csv=r.val_csv,
+                gpu=r.gpu,
+                foundation_model_name=r.model_name,
+                foundation_lr=r.lr,
+                foundation_batch_size=r.batch_size,
+                foundation_n_epochs=r.n_epochs,
+                foundation_model_args={
+                    'from_pretrained':r.from_pretrained
+                })
+            metrics[r.run_label] = end2end.values_to_json_obj(run_metrics)
+            with open(os.path.join(save_dir, 'metrics.json'), 'w') as f:
+                json.dump(metrics, f, indent=4)
+        except:
+            print(f'Failed {r}')
+            
     for r in flood_runs:
         print('Starting', r.run_label, '...')
-        run_metrics = end2end.run(
-            save_dir=r.save_dir,
-            train_csv=r.train_csv,
-            val_csv=r.val_csv,
-            gpu=r.gpu,
-            flood_model_name=r.model_name,
-            flood_lr=r.lr,
-            flood_batch_size=r.batch_size,
-            flood_n_epochs=r.n_epochs,
-            flood_model_args={
-                'from_pretrained':r.from_pretrained
-            })
-        metrics[r.run_label] = end2end.values_to_json_obj(run_metrics)
-        with open(os.path.join(save_dir, 'metrics.json'), 'w') as f:
-            json.dump(metrics, f, indent=4)
+        try:
+            run_metrics = end2end.run(
+                save_dir=r.save_dir,
+                train_csv=r.train_csv,
+                val_csv=r.val_csv,
+                gpu=r.gpu,
+                flood_model_name=r.model_name,
+                flood_lr=r.lr,
+                flood_batch_size=r.batch_size,
+                flood_n_epochs=r.n_epochs,
+                flood_model_args={
+                    'from_pretrained':r.from_pretrained
+                })
+            metrics[r.run_label] = end2end.values_to_json_obj(run_metrics)
+            with open(os.path.join(save_dir, 'metrics.json'), 'w') as f:
+                json.dump(metrics, f, indent=4)
+        except:
+            print(f'Failed {r}')
+        
     return metrics
 
 if __name__ == '__main__':

@@ -190,34 +190,37 @@ def train_models(save_dir, runs=[], gpu=0):
     os.makedirs(save_dir, exist_ok=True)
     cache = RunCache(save_dir)
     for r in runs:
-        print('Starting', r.run_id(), '...')
-        if r.flood:
-            run_metrics = end2end.run(
-                save_dir=cache.new_run_directory(r, 'flood'),
-                train_csv=r.train_csv,
-                val_csv=r.val_csv,
-                gpu=gpu,
-                flood_model_name=r.model_name,
-                flood_lr=r.lr,
-                flood_batch_size=r.batch_size,
-                flood_n_epochs=r.n_epochs,
-                flood_model_args={
-                    'from_pretrained':r.from_pretrained
-                })
-        else:
-            run_metrics = end2end.run(
-                save_dir=cache.new_run_directory(r, 'foundation'),
-                train_csv=r.train_csv,
-                val_csv=r.val_csv,
-                gpu=gpu,
-                foundation_model_name=r.model_name,
-                foundation_lr=r.lr,
-                foundation_batch_size=r.batch_size,
-                foundation_n_epochs=r.n_epochs,
-                foundation_model_args={
-                    'from_pretrained':r.from_pretrained
-                })
-        cache.save_run_metrics(r, end2end.values_to_json_obj(run_metrics))
+        try:
+            print('Starting', r.run_id(), '...')
+            if r.flood:
+                run_metrics = end2end.run(
+                    save_dir=cache.new_run_directory(r, 'flood'),
+                    train_csv=r.train_csv,
+                    val_csv=r.val_csv,
+                    gpu=gpu,
+                    flood_model_name=r.model_name,
+                    flood_lr=r.lr,
+                    flood_batch_size=r.batch_size,
+                    flood_n_epochs=r.n_epochs,
+                    flood_model_args={
+                        'from_pretrained':r.from_pretrained
+                    })
+            else:
+                run_metrics = end2end.run(
+                    save_dir=cache.new_run_directory(r, 'foundation'),
+                    train_csv=r.train_csv,
+                    val_csv=r.val_csv,
+                    gpu=gpu,
+                    foundation_model_name=r.model_name,
+                    foundation_lr=r.lr,
+                    foundation_batch_size=r.batch_size,
+                    foundation_n_epochs=r.n_epochs,
+                    foundation_model_args={
+                        'from_pretrained':r.from_pretrained
+                    })
+            cache.save_run_metrics(r, end2end.values_to_json_obj(run_metrics))
+        except Exception as e:
+            print(f'Exception: {e}')
     return cache
 
 if __name__ == '__main__':

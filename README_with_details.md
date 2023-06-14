@@ -26,7 +26,7 @@ Please be patient, mounting might take up to a 10 seconds or so (refresh the fol
 You are now ready to start a docker container for baseline (current ver 1.1):
 ```zsh
 # sudo nvidia-docker run -v ~/share:/tmp/share --ipc=host -it --rm sn8/baseline:1.0 bash
-sudo nvidia-docker run -v ~/share:/tmp/share --ipc=host -it --rm sn8/baseline:1.1 bash 
+sudo nvidia-docker run -v ~/noshare:/tmp/share --ipc=host -it --rm sn8/baseline:1.1 bash 
 ```
 this also mounts a `share` drive to `/tmp/share` inside the container.
 

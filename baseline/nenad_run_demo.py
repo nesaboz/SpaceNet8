@@ -14,18 +14,14 @@ val_csv="/tmp/share/data/spacenet8/sn8_data_val.csv"
 run_root = Path('/tmp/share/runs/spacenet8/nenad')
 
 now = datetime.now() 
-tag = 'segformer_b1_'
+tag = 'densenet121_'
 save_dir = os.path.join(run_root, tag + now.strftime("%Y-%m-%d-%H-%M"))
 
 run(
     save_dir=save_dir,
     train_csv=train_csv,
     val_csv=val_csv,
-    foundation_model_name='segformer_b1',   # resnet34
-    foundation_lr=0.0001,
-    foundation_batch_size=2,
-    foundation_n_epochs=20,
-    flood_model_name='segformer_b1_siamese',  #  # resnet34_siamese
+    flood_model_name='dense_121_siamese',  #  # resnet34_siamese
     flood_lr=0.0001,
     flood_batch_size=1,
     flood_n_epochs=20
