@@ -11,3 +11,4 @@ geopandas==0.10.2
 transformers==4.29.2
 ipywidgets==8.0.2
 seaborn==0.12.2
+efficientnet-pytorch==0.7.1

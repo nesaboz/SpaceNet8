@@ -11,6 +11,7 @@ from matplotlib import colors
 import torch
 import torch.nn as nn
 
+from models import foundation_models
 from train_foundation_features import models
 
 import models.pytorch_zoo.unet as unet
@@ -118,7 +119,7 @@ def make_prediction_png_roads_buildings(image, gts, predictions, save_figure_fil
     plt.close(fig)
     plt.close('all')
 
-
+models = foundation_models
 
 def foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu=0, create_folders=True):
     """
@@ -299,6 +300,7 @@ def foundation_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name
         write_to_csv_file(datetime_str, model_name, data[i], precision, recall, f1, iou, eval_results_file)
     eval_metrics.end()
     return eval_metrics
+
 
 
 if __name__ == "__main__":

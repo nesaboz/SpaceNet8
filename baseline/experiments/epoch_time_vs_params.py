@@ -19,6 +19,7 @@ def plot_scatter(x, y, labels):
     assert len(x) == len(y) == len(labels), "Input lists must have the same length"
 
     fig, ax = plt.subplots(figsize=(6,4))
+    fig, ax = plt.subplots(figsize=(6,4))
     plt.scatter(x, y)
     for i, label in enumerate(labels):
         plt.annotate(label, (x[i], y[i]+0.1))
@@ -33,6 +34,8 @@ def plot_scatter(x, y, labels):
     plt.grid(True)
 
     # plt.axis([0, 1.1*max(x), 0, 1.1*max(y)])
+    plt.savefig(os.path.join(BASELINE, f'results/epoch_time.png'),
+                dpi=300, bbox_inches='tight')
     plt.savefig(os.path.join(BASELINE, f'results/epoch_time.png'),
                 dpi=300, bbox_inches='tight')
     print(f'Created file.')
@@ -50,7 +53,7 @@ def plot_epoch_time():
                  '/tmp/share/runs/spacenet8/nenad/2023-06-07-21-47_epoch_time/_epoch_time_segformer_b1',
                  '/tmp/share/runs/spacenet8/nenad/2023-06-08-02-20_segformer_b2',
                  ]
-    model_names = ['dummy', 'resnet34', 'resnet50', 'segformer_b0', 'segformer_b1',  'segformer_b2'] #  'effunet_b2', 'effunet_b4']
+    model_names = ['dummy', 'resnet34']  #  'resnet50', 'segformer_b0', 'segformer_b1',  'segformer_b2'] #  'effunet_b2', 'effunet_b4']
     
     n_params = []
     learnable_n_params = []
@@ -75,7 +78,7 @@ def plot_epoch_time():
     plot_scatter(n_params, epoch_times_short, model_names)
 
 if __name__ == '__main__':
-    # epoch duration shorter /tmp/share/runs/spacenet8/nenad/2023-06-07-21-47
+      # epoch duration shorter /tmp/share/runs/spacenet8/nenad/2023-06-07-21-47
     # epoch duration '/tmp/share/runs/spacenet8/nenad/2023-06-05-18-49_epoch_time_vs_param')  # latest run: '/tmp/share/runs/spacenet8/nenad/2023-06-05-18-49_epoch_time_vs_param'
     # plot_epoch_time('/tmp/share/runs/spacenet8/nenad/2023-06-07-21-47', tag='shorter')  # 
     # plot_epoch_time('/tmp/share/runs/spacenet8/nenad/2023-06-05-18-49_epoch_time_vs_param')  # latest run: '/tmp/share/runs/spacenet8/nenad/2023-06-05-18-49_epoch_time_vs_param')  # 

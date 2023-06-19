@@ -14,6 +14,8 @@ import torch.nn as nn
 import psutil
 import datetime
 
+from models import flood_models
+
 from utils.log import write_to_csv_file
 from utils.log import get_eval_results_path
 from train_flood import models
@@ -96,6 +98,8 @@ def make_prediction_png(image, postimage, gt, prediction, save_figure_filename):
     plt.close(fig)
     plt.close('all')
                 
+    
+models = flood_models
 
 def flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu=0, create_folders=True):
     """
@@ -168,7 +172,7 @@ def flood_eval(model_path, in_csv, save_fig_dir, save_preds_dir, model_name, gpu
             
             flood = torch.tensor(flood).cuda()
 
-            pad_models = ['effunet_b2', 'effunet_b4', 'dense_121', 'dense_161']
+            pad_models = ['effunet_b2_siamese', 'effunet_b4_siamese', 'dense_121_siamese', 'dense_161_siamese']
 
             if model_name in pad_models:
                 combinedimg = torch.cat((preimg, postimg), dim=1)

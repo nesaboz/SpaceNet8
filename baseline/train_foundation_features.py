@@ -10,6 +10,9 @@ import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
 
+from models import foundation_models
+pad_models = ['effunet_b2', 'effunet_b4', 'dense_121', 'dense_161']
+
 from datasets.datasets import SN8Dataset
 from core.losses import focal, soft_dice_loss
 import models.pytorch_zoo.unet as unet
@@ -66,27 +69,7 @@ def write_metrics_epoch(epoch, fieldnames, train_metrics, val_metrics, training_
 def save_model_checkpoint(model, checkpoint_model_path): 
     torch.save(model.state_dict(), checkpoint_model_path)
 
-models = {
-    'resnet34': unet.Resnet34_upsample,
-    'resnet50': unet.Resnet50_upsample,
-    'resnet101': unet.Resnet101_upsample,
-    'seresnet50': unet.SeResnet50_upsample,
-    'seresnet101': unet.SeResnet101_upsample,
-    'seresnet152': unet.SeResnet152_upsample,
-    'seresnext50': unet.SeResnext50_32x4d_upsample,
-    'seresnext101': unet.SeResnext101_32x4d_upsample,
-    'unet':UNet,
-    'segformer_b0': segformer.Segformer_b0,
-    'segformer_b1': segformer.Segformer_b1,
-    'segformer_b2': segformer.Segformer_b2,
-    'segformer_b0_1x1_conv': segformer.Segformer_b0_1x1_conv,
-    'segformer_b0_double_conv': segformer.Segformer_b0_double_conv,
-    'dummy': segformer.DummyModule,
-    'effunet_b2': Densen_EffUnet.EffUnet_b2_f,
-    'effunet_b4': Densen_EffUnet.EffUnet_b4_f,
-    'dense_121': Densen_EffUnet.Dense_121_f,
-    'dense_161': Densen_EffUnet.Dense_161_f
-}
+models = foundation_models
 
 
 def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size, n_epochs, gpu, checkpoint_path=None, model_args={}, **kwargs):
@@ -146,7 +129,7 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
     if model_name == "unet":
         model = UNet(3, [1,8], bilinear=True, **model_args)
     else:
-        model = models[model_name](num_classes=[1, 8], num_channels=3, **model_args)  # there is 1 class for the buiding and 8 classes for the road, hence [1, 8]
+        model = models[model_name](num_classes=[1, 8], num_channels=3, **model_args)  # there is 1 class for the building and 8 classes for the road, hence [1, 8]
     assert(hasattr(model, 'from_pretrained'))
     training_metrics.record_model_metrics(model)
     
@@ -194,8 +177,6 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
             roadspeed = roadspeed.cuda().float()
             building = building.cuda().float()
             tic1 = time.time()
-
-            pad_models = ['effunet_b2', 'effunet_b4', 'dense_121', 'dense_161']
 
             if model_name in pad_models:
                 padded_preimg = torch.nn.functional.pad(preimg, (6, 6, 6, 6))
@@ -274,8 +255,6 @@ def train_foundation(train_csv, val_csv, save_dir, model_name, initial_lr, batch
                 preimg = preimg.cuda().float()
                 roadspeed = roadspeed.cuda().float()
                 building = building.cuda().float()
-
-                pad_models = ['effunet_b2', 'effunet_b4', 'dense_121', 'dense_161']
 
                 if model_name in pad_models:
                     padded_preimg = torch.nn.functional.pad(preimg, (6, 6, 6, 6))

@@ -10,6 +10,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from torchvision import transforms
+from models import flood_models
 
 from datasets.datasets import SN8Dataset
 import models.pytorch_zoo.unet as unet
@@ -74,31 +75,8 @@ def save_model_checkpoint(model, checkpoint_model_path):
 def save_best_model(model, best_model_path):
     torch.save(model.state_dict(), best_model_path)
 
-models = {
-    'resnet34_siamese': unet.Resnet34_siamese_upsample,
-    'resnet34': unet.Resnet34_upsample,
-    'resnet50_siamese': unet.Resnet50_siamese_upsample,
-    'resnet50': unet.Resnet50_upsample,
-    'resnet101': unet.Resnet101_upsample,
-    'seresnet50': unet.SeResnet50_upsample,
-    'seresnet101': unet.SeResnet101_upsample,
-    'seresnet152': unet.SeResnet152_upsample,
-    'seresnext50': unet.SeResnext50_32x4d_upsample,
-    'seresnext101': unet.SeResnext101_32x4d_upsample,
-    # No pretrained weights available
-    'unet_siamese':UNetSiamese,
-    # No pretrained weights available
-    'unet_siamese_dif':SiamUnet_diff,
-    # No pretrained weights available
-    'nestedunet_siamese':SNUNet_ECAM,
-    'segformer_b0_siamese': segformer.SiameseSegformer_b0,
-    'segformer_b1_siamese': segformer.SiameseSegformer_b1,
-    'segformer_b2_siamese': segformer.SiameseSegformer_b2,
-    'effunet_b2_siamese': Densen_EffUnet.EffUnet_b2,
-    'effunet_b4_siamese': Densen_EffUnet.EffUnet_b4,
-    'dense_121_siamese': Densen_EffUnet.Dense_121,
-    'dense_161_siamese': Densen_EffUnet.Dense_161
-}
+models = flood_models
+pad_models = ['effunet_b2_siamese', 'effunet_b4_siamese', 'dense_121_siamese', 'dense_161_siamese']
 
 def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size, n_epochs, gpu, checkpoint_path=None, model_args={}, **kwargs):
     '''
@@ -162,7 +140,7 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
         # No pretrained weights available
         model = UNetSiamese(3, num_classes, bilinear=True, **model_args)
     else:
-        model = models[model_name](num_classes=num_classes, num_channels=3, **model_args)  # num classes here is 5, (0: background, 1: non-floded building, 2: flooded building, 3: non-flooded road, and 4: flooded road)
+        model = models[model_name](num_classes=num_classes, num_channels=3, **model_args)  # num classes here is 5, (0: background, 1: non-flooded building, 2: flooded building, 3: non-flooded road, and 4: flooded road)
     assert(hasattr(model, 'from_pretrained'))
     training_metrics.record_model_metrics(model)
 
@@ -218,8 +196,6 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
             flood = np.argmax(flood, axis = 1) # this is needed for cross-entropy loss. 
 
             flood = torch.tensor(flood).cuda()
-
-            pad_models = ['effunet_b2', 'effunet_b4', 'dense_121', 'dense_161']
 
             if model_name in pad_models:
                 combinedimg = torch.cat((preimg, postimg), dim=1)
@@ -300,7 +276,6 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
                 
 
                 flood = torch.tensor(flood).cuda()
-                pad_models = ['effunet_b2', 'effunet_b4', 'dense_121', 'dense_161']
 
                 if model_name in pad_models:
                     combinedimg = torch.cat((preimg, postimg), dim=1)
@@ -308,7 +283,6 @@ def train_flood(train_csv, val_csv, save_dir, model_name, initial_lr, batch_size
                     padded_combinedimg = torch.nn.functional.pad(combinedimg, (6, 6, 6, 6))
                     padded_flood_pred = model(padded_combinedimg) # stacked preimg+postimg input
                     flood_pred = padded_flood_pred[..., 6:-6, 6:-6]
-                
                 else:
                     flood_pred = model(preimg, postimg) 
 
