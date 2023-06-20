@@ -22,8 +22,6 @@ This project explores the SpaceNet8 Challenge, which aims to detect floods cause
     </figure>
 </center>
 
-
-<\center>
 Examples of SpaceNet8 raw images pre- and post-event (top row) and respective ground truth segmentation masks (bottom row)[1]. Colors indicate classes (buildings, road, flooded buildings and flooded roads). In this example blue and yellow colors refer to flooded buildings and roads. For pre-event labels there is 1 building class and 8 road classes denoting speed (10 mph per class). For post event there are 4 classes (non-flooded building, flooded building, flooded road, non-flooded road). Dataset was imbalanced and favored non-flooded areas (~85% of labels). We performed a split of 679 training images and 122 (15%) validation ones (used for all experiments).
 
 # Model Architecture
@@ -45,9 +43,9 @@ Resnet34/50 is a baseline model. Segformer uses a hierarchical transformer encod
 
 <center>
     <figure>
-    <img width="400" src="https://raw.githubusercontent.com/nesaboz/SpaceNet8/main/paper/final-report/figures/sample_images_flood_0.png"/>
-    <img width="400" src="https://raw.githubusercontent.com/nesaboz/SpaceNet8/main/paper/final-report/figures/sample_images_flood_2.png"/>
-    <img width="300" src="https://raw.githubusercontent.com/nesaboz/SpaceNet8/main/paper/final-report/figures/iou_vs_model.png"/>
+    <img width="400" src="https://raw.githubusercontent.com/nesaboz/SpaceNet8/main/paper/final-report/figures/sample_images_flood_0.png"/><br>
+    <img width="400" src="https://raw.githubusercontent.com/nesaboz/SpaceNet8/main/paper/final-report/figures/sample_images_flood_2.png"/><br>
+    <img width="300" src="https://raw.githubusercontent.com/nesaboz/SpaceNet8/main/paper/final-report/figures/iou_vs_model.png"/><br>
     <img width="250" src="https://raw.githubusercontent.com/nesaboz/SpaceNet8/main/paper/final-report/figures/table.png"/>
     </figure>
 </center>
