@@ -68,8 +68,8 @@ We noticed loading data from shared network drive increased epoch time 6-fold (~
 
 <center>
     <figure>
-    <img width="200" src="https://raw.githubusercontent.com/nesaboz/SpaceNet8/main/paper/final-report/figures/peak_training_gpu_memory.png"/>
-    <img width="220" src="https://raw.githubusercontent.com/nesaboz/SpaceNet8/main/paper/final-report/figures/epoch_time.png"/>
+      <img width="300" src="https://raw.githubusercontent.com/nesaboz/SpaceNet8/main/paper/final-report/figures/peak_training_gpu_memory.png"/>
+      <img style="margin-top: 18px; width: 300px;" src="https://raw.githubusercontent.com/nesaboz/SpaceNet8/main/paper/final-report/figures/epoch_time.png"/>
     </figure>
 </center>
 
@@ -79,8 +79,7 @@ Transformer models have better overall performance than CNN based models, althou
 
 Pre-training makes a positive contribution to the performance, and models pre-trained on different dataset could have slightly different performance in specific tasks.
 
-Future Work includes exploring other model architectures, eg. Segment Anything.
-image augmentation. Pre-train model on additional dataset. Add weights to the CrossEntropy loss function.
+Future Work includes exploring other model architectures, eg. Segment Anything, add image augmentation, pre-train model on additional dataset, and add weights to the CrossEntropy loss function.
 
 ## References
 
