@@ -16,13 +16,13 @@ This project explores the SpaceNet8 Challenge, which aims to detect floods cause
 
 # Dataset
 
-![dataset](paper\final-report\figures\dataset.png)
+![dataset](https://raw.githubusercontent.com/nesaboz/SpaceNet8/main/paper/final-report/figures/dataset.png)
 
 Examples of SpaceNet8 raw images pre- and post-event (top row) and respective ground truth segmentation masks (bottom row)[1]. Colors indicate classes (buildings, road, flooded buildings and flooded roads). In this example blue and yellow colors refer to flooded buildings and roads. For pre-event labels there is 1 building class and 8 road classes denoting speed (10 mph per class). For post event there are 4 classes (non-flooded building, flooded building, flooded road, non-flooded road). Dataset was imbalanced and favored non-flooded areas (~85% of labels). We performed a split of 679 training images and 122 (15%) validation ones (used for all experiments).
 
 # Model Architecture
 
-![baseline](paper\final-report\figures\baseline.jpg)
+![baseline](https://raw.githubusercontent.com/nesaboz/SpaceNet8/main/paper/final-report/figures/baseline.jpg)
 
 Pipeline provided by SpaceNet8 containing foundation features network and flood attribution networks. The pipeline design is modular and allows different backbone models to be swapped in while maintaining the same data-loading, training, and evaluation code.
 
@@ -32,10 +32,10 @@ We compared several backbones for Intersection over Union (IoU) metric. Each mod
 
 Resnet34/50 is a baseline model. Segformer uses a hierarchical transformer encoder combining multiscale features using MLP. Unlike ViT, Segformer does not use positional encoding which aids transfer learning between datasets with different image resolutions [2]. DenseNet’s main feature is that it connects each layer to every other layer in a feed-forward fashion for a total of L(L+1)/2 connections, comparing to traditional CNN's L layers [3]. EfficientNet is a CNN that uses so-called compound scaling with optimal layer width, depth, and resolution [4].
 
-![flood_samples_0](paper\final-report\figures\sample_images_flood_0.png)
-![flood_samples_2](paper\final-report\figures\sample_images_flood_2.png)
-![iou_vs_model](paper\final-report\figures\iou_vs_model.png)
-![table](paper\final-report\figures\table.png)
+![flood_samples_0](https://raw.githubusercontent.com/nesaboz/SpaceNet8/main/paper/final-report/figures/sample_images_flood_0.png)
+![flood_samples_2](https://raw.githubusercontent.com/nesaboz/SpaceNet8/main/paper/final-report/figures/sample_images_flood_2.png)
+![iou_vs_model](https://raw.githubusercontent.com/nesaboz/SpaceNet8/main/paper/final-report/figures/iou_vs_model.png)
+![table](https://raw.githubusercontent.com/nesaboz/SpaceNet8/main/paper/final-report/figures/table.png)
 
 Overall Segformer performs better than CNN models on all metrics, showing that attention is better suited for detecting building and road-like polygonal objects. 
 
@@ -52,8 +52,8 @@ The y-intercept of the memory vs batch-size best fit line is the memory from mod
 
 We noticed loading data from shared network drive increased epoch time 6-fold (~4 minutes) in comparison to loading data locally from hard drive.
 
-![gpu_memory](paper\final-report\figures\peak_training_gpu_memory.png)
-![epoch_time](paper\final-report\figures\epoch_time.png)
+![gpu_memory](https://raw.githubusercontent.com/nesaboz/SpaceNet8/main/paper/final-report/figures/peak_training_gpu_memory.png)
+![epoch_time](https://raw.githubusercontent.com/nesaboz/SpaceNet8/main/paper/final-report/figures/epoch_time.png)
 
 # Conclusion
 
